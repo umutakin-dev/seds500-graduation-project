@@ -61,3 +61,10 @@ checkpoints/
 logs/
 *.log
 wandb/
+
+# Reference repositories (cloned for study)
+repos/
+
+# uv
+.venv/
+uv.lock
