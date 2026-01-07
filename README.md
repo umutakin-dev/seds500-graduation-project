@@ -2,9 +2,33 @@
 
 Master's Graduation Project (SEDS500)
 
-## Overview
+## Why This Project?
 
-This project explores diffusion-based generative models for tabular data augmentation. The goal is to implement and evaluate methods that can generate realistic synthetic tabular data to augment existing datasets.
+Our ML team has consistently struggled with **data acquisition**:
+- Data was simply **not there** (no existing datasets for our use case)
+- Data was **not shared** (organizational silos, privacy concerns, proprietary restrictions)
+- Data was **limited** (small sample sizes, class imbalance, rare events)
+
+**Classic data augmentation techniques did not improve model accuracy.**
+
+Traditional approaches like SMOTE, random oversampling, or simple perturbations failed to capture the complex relationships in tabular data.
+
+### The Goal
+
+This study is a **series of experiments** to answer a critical question:
+
+> Can we create a data augmentation system using diffusion models that actually increases model accuracy?
+
+### Success Criteria
+- Synthetic data that preserves statistical properties of real data
+- Improved ML model performance when training on augmented datasets
+- A practical, reproducible pipeline for tabular data augmentation
+
+### Why Diffusion Models?
+- State-of-the-art results on image generation (DALL-E, Stable Diffusion)
+- Recent papers (TabDDPM, STaSy, TabSyn) show promise for tabular data
+- Can capture complex feature dependencies
+- Better privacy properties than GANs
 
 ## Background
 
@@ -39,10 +63,34 @@ Diffusion models have recently shown promising results in this domain.
 │   ├── models.py     # MLP denoiser networks
 │   └── train.py      # Training script
 ├── notebooks/        # Experiments and analysis
+├── experiments/      # Organized experiment folders
 ├── data/             # Datasets (not tracked)
 ├── checkpoints/      # Model checkpoints (not tracked)
-└── results/          # Experiment results
+├── results/          # Experiment results
+└── todo/             # Task tracking
 ```
+
+## Development Guidelines
+
+### Experiments Structure
+Each experiment should be in its own folder for reproducibility:
+```
+experiments/
+├── exp001-iris-baseline/
+│   ├── config.yaml
+│   ├── results/
+│   └── README.md
+├── exp002-california-gaussian/
+├── exp003-adult-multinomial/
+└── ...
+```
+
+### Methodology Notes
+
+**Cross-Validation vs Dropout:**
+- **Cross-validation (k-fold):** For robust performance estimation during evaluation
+- **Dropout:** Regularization during training to prevent overfitting
+- Different purposes but both address generalization
 
 ## Setup
 
