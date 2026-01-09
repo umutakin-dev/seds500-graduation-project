@@ -78,6 +78,19 @@ Accuracy: 96.67% | Precision: 97% | Recall: 97% | F1: 97%
 - No categorical features tested (Gaussian diffusion only)
 - Label assignment via nearest neighbor is naive
 
+## Data
+
+**Input (project-level):**
+- `data/iris/train.csv` - Original training data (120 samples)
+- `data/iris/test.csv` - Original test data (30 samples)
+
+**Output (experiment-specific):**
+- `data/synthetic.csv` - Generated synthetic data (120 samples)
+
+Each CSV contains: sepal_length, sepal_width, petal_length, petal_width, label
+
+To regenerate the original data: `uv run python src/prepare_data.py --dataset iris`
+
 ## Figures
 
 Generated visualizations for presentation/report:

@@ -2,17 +2,19 @@
 ML Efficiency Evaluation for tabular diffusion models.
 
 Evaluates whether synthetic data can improve ML model performance:
-- Real → Real: Train on real, test on real (baseline)
-- Synthetic → Real: Train on synthetic, test on real (ML efficiency)
-- Augmented → Real: Train on real+synthetic, test on real (augmentation)
+- Real -> Real: Train on real, test on real (baseline)
+- Synthetic -> Real: Train on synthetic, test on real (ML efficiency)
+- Augmented -> Real: Train on real+synthetic, test on real (augmentation)
 
 Usage:
     python src/evaluate.py --checkpoint checkpoints/iris/final_model.pt
+    python src/evaluate.py --checkpoint checkpoints/iris/final_model.pt --output experiments/experiment-001-iris-baseline/data
 """
 
 import argparse
 import torch
 import numpy as np
+import pandas as pd
 from pathlib import Path
 from sklearn.datasets import load_iris
 from sklearn.preprocessing import QuantileTransformer
@@ -29,6 +31,7 @@ def load_iris_with_labels():
     """Load Iris dataset with features and labels."""
     data = load_iris()
     X, y = data.data, data.target
+    feature_names = [name.replace(' (cm)', '') for name in data.feature_names]
 
     # Split
     X_train, X_test, y_train, y_test = train_test_split(
@@ -42,7 +45,7 @@ def load_iris_with_labels():
     X_train_scaled = np.clip(X_train_scaled, -3, 3) / 3
     X_test_scaled = np.clip(X_test_scaled, -3, 3) / 3
 
-    return X_train, X_test, y_train, y_test, X_train_scaled, X_test_scaled, scaler
+    return X_train, X_test, y_train, y_test, X_train_scaled, X_test_scaled, scaler, feature_names
 
 
 def generate_synthetic_data(model, diffusion, n_samples, n_features, device):
@@ -77,11 +80,25 @@ def evaluate_classifier(clf, X_train, y_train, X_test, y_test, name=""):
     return acc, y_pred
 
 
+def save_synthetic_data(X_synthetic, y_synthetic, feature_names, output_dir):
+    """Save synthetic data to experiment folder."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Synthetic data only
+    df_synthetic = pd.DataFrame(X_synthetic, columns=feature_names)
+    df_synthetic['label'] = y_synthetic
+    df_synthetic.to_csv(output_dir / "synthetic.csv", index=False)
+
+    print(f"\n[*] Synthetic data saved to {output_dir}/synthetic.csv ({len(df_synthetic)} samples)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="ML Efficiency Evaluation")
     parser.add_argument("--checkpoint", type=str, default="checkpoints/iris/final_model.pt")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--n_synthetic", type=int, default=None, help="Number of synthetic samples (default: same as training)")
+    parser.add_argument("--output", type=str, default=None, help="Output directory for saving data (optional)")
     args = parser.parse_args()
 
     print("=" * 60)
@@ -90,7 +107,7 @@ def main():
 
     # Load data
     print("\n[1] Loading Iris dataset...")
-    X_train, X_test, y_train, y_test, X_train_scaled, X_test_scaled, scaler = load_iris_with_labels()
+    X_train, X_test, y_train, y_test, X_train_scaled, X_test_scaled, scaler, feature_names = load_iris_with_labels()
     print(f"    Train: {len(X_train)} samples, Test: {len(X_test)} samples")
     print(f"    Classes: {np.unique(y_train)}")
 
@@ -190,6 +207,10 @@ def main():
         print(f"\n{clf_name}:")
         print(f"  ML Efficiency (Syn->Real vs Real->Real): {delta_sr:+.1f}%")
         print(f"  Augmentation benefit (Aug->Real vs Real->Real): {delta_ar:+.1f}%")
+
+    # Save synthetic data if output directory specified
+    if args.output:
+        save_synthetic_data(X_synthetic, y_synthetic, feature_names, args.output)
 
     return results
 
