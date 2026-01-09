@@ -41,13 +41,17 @@ Validate that our Gaussian diffusion implementation works correctly on a simple,
 | petal length | 0.0048 | -0.0400 | 0.3473 | 0.3004 |
 | petal width | 0.0053 | -0.0591 | 0.3560 | 0.3326 |
 
-### ML Efficiency Evaluation
+### ML Efficiency Evaluation: Diffusion vs SMOTE
 
 | Scenario | Logistic Regression | Random Forest |
 |----------|---------------------|---------------|
 | Real -> Real (baseline) | 96.67% | 90.00% |
-| Synthetic -> Real | 86.67% (-10.0%) | 90.00% (+0.0%) |
-| **Augmented -> Real** | 96.67% (+0.0%) | **96.67% (+6.7%)** |
+| Diffusion only | 93.33% (-3.3%) | 93.33% (+3.3%) |
+| SMOTE only | 96.67% (+0.0%) | 96.67% (+6.7%) |
+| **Augmented-Diffusion** | 96.67% (+0.0%) | 93.33% (+3.3%) |
+| **Augmented-SMOTE** | 96.67% (+0.0%) | 93.33% (+3.3%) |
+
+**Key finding:** On Iris, Diffusion and SMOTE perform equally for augmentation (93.33% with Random Forest).
 
 ### Confusion Matrix (Random Forest, Augmented -> Real)
 
@@ -64,13 +68,18 @@ Accuracy: 96.67% | Precision: 97% | Recall: 97% | F1: 97%
 
 1. **Gaussian diffusion works** - synthetic data matches real data statistics closely (correlation diff: 0.024)
 
-2. **ML Efficiency varies by model:**
-   - Logistic Regression: Synthetic data alone performs worse (-10%), but doesn't hurt when augmented
-   - Random Forest: Synthetic data alone matches baseline, augmentation improves by 6.7%
+2. **Diffusion matches SMOTE on simple data:**
+   - Both augmentation methods achieve 93.33% with Random Forest
+   - SMOTE alone slightly better (96.67% vs 93.33%), but equal when augmented
+   - This is expected - Iris is small, balanced, and purely numerical (SMOTE's ideal case)
 
-3. **Augmentation shows promise** - Random Forest improved from 90% to 96.67% accuracy when trained on real + synthetic data
+3. **The real test is on harder data:**
+   - Complex feature relationships
+   - Class imbalance
+   - Mixed categorical/numerical features
+   - This is where SMOTE typically fails and diffusion should shine
 
-4. **Label distribution issue** - Synthetic labels (assigned via 1-NN) are imbalanced [41, 50, 29] vs real [40, 40, 40]. This could be improved with conditional generation.
+4. **Label distribution issue** - Diffusion labels (assigned via 1-NN) are imbalanced [46, 42, 32] vs real [40, 40, 40] vs SMOTE [40, 40, 40]. This could be improved with conditional generation.
 
 ## Limitations
 

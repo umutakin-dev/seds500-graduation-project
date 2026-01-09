@@ -3,8 +3,10 @@ ML Efficiency Evaluation for tabular diffusion models.
 
 Evaluates whether synthetic data can improve ML model performance:
 - Real -> Real: Train on real, test on real (baseline)
-- Synthetic -> Real: Train on synthetic, test on real (ML efficiency)
-- Augmented -> Real: Train on real+synthetic, test on real (augmentation)
+- Diffusion -> Real: Train on diffusion synthetic, test on real
+- SMOTE -> Real: Train on SMOTE synthetic, test on real
+- Augmented-Diffusion -> Real: Train on real + diffusion, test on real
+- Augmented-SMOTE -> Real: Train on real + SMOTE, test on real
 
 Usage:
     python src/evaluate.py --checkpoint checkpoints/iris/final_model.pt
@@ -22,6 +24,7 @@ from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from imblearn.over_sampling import SMOTE
 
 from diffusion import GaussianDiffusion
 from models import MLPDenoiser
@@ -138,13 +141,33 @@ def main():
     X_synthetic = scaler.inverse_transform(np.clip(X_synthetic_unscaled, -3, 3))
 
     # Assign labels to synthetic data
-    print("[4] Assigning labels to synthetic samples...")
+    print("[4] Assigning labels to diffusion samples...")
     y_synthetic = generate_synthetic_labels(X_synthetic_scaled, X_train_scaled, y_train)
-    print(f"    Synthetic label distribution: {np.bincount(y_synthetic)}")
+    print(f"    Diffusion label distribution: {np.bincount(y_synthetic)}")
     print(f"    Real label distribution:      {np.bincount(y_train)}")
 
+    # Generate SMOTE data for comparison
+    print("\n[5] Generating SMOTE samples for comparison...")
+    smote = SMOTE(random_state=42, k_neighbors=min(5, min(np.bincount(y_train)) - 1))
+    # SMOTE doubles the dataset, so we take only the new samples
+    X_smote_full, y_smote_full = smote.fit_resample(X_train, y_train)
+    # Extract only the synthetic samples (SMOTE appends them at the end)
+    n_original = len(X_train)
+    X_smote = X_smote_full[n_original:]
+    y_smote = y_smote_full[n_original:]
+    # If SMOTE generated fewer samples than diffusion, resample to match
+    if len(X_smote) < n_synthetic:
+        # Repeat SMOTE with higher sampling
+        smote_ratio = {cls: n_synthetic // 3 + n_original // 3 for cls in np.unique(y_train)}
+        smote = SMOTE(sampling_strategy=smote_ratio, random_state=42, k_neighbors=min(5, min(np.bincount(y_train)) - 1))
+        X_smote_full, y_smote_full = smote.fit_resample(X_train, y_train)
+        X_smote = X_smote_full[n_original:]
+        y_smote = y_smote_full[n_original:]
+    print(f"    SMOTE samples generated: {len(X_smote)}")
+    print(f"    SMOTE label distribution: {np.bincount(y_smote)}")
+
     # Evaluate classifiers
-    print("\n[5] Evaluating ML models...")
+    print("\n[6] Evaluating ML models...")
     print("=" * 60)
 
     classifiers = [
@@ -156,57 +179,91 @@ def main():
 
     for clf_name, clf in classifiers:
         print(f"\n{clf_name}:")
-        print("-" * 40)
+        print("-" * 50)
 
-        # Real → Real (baseline)
+        # Real -> Real (baseline)
         clf_rr = type(clf)(**clf.get_params())
         acc_rr, _ = evaluate_classifier(clf_rr, X_train, y_train, X_test, y_test)
 
-        # Synthetic → Real
-        clf_sr = type(clf)(**clf.get_params())
-        acc_sr, _ = evaluate_classifier(clf_sr, X_synthetic, y_synthetic, X_test, y_test)
+        # Diffusion -> Real
+        clf_diff = type(clf)(**clf.get_params())
+        acc_diff, _ = evaluate_classifier(clf_diff, X_synthetic, y_synthetic, X_test, y_test)
 
-        # Augmented → Real (real + synthetic)
-        X_augmented = np.vstack([X_train, X_synthetic])
-        y_augmented = np.concatenate([y_train, y_synthetic])
-        clf_ar = type(clf)(**clf.get_params())
-        acc_ar, y_pred_ar = evaluate_classifier(clf_ar, X_augmented, y_augmented, X_test, y_test)
+        # SMOTE -> Real
+        clf_smote = type(clf)(**clf.get_params())
+        acc_smote, _ = evaluate_classifier(clf_smote, X_smote, y_smote, X_test, y_test)
 
-        print(f"  Real -> Real (baseline):    {acc_rr:.4f}")
-        print(f"  Synthetic -> Real:          {acc_sr:.4f} ({'+' if acc_sr >= acc_rr else ''}{(acc_sr - acc_rr)*100:.1f}%)")
-        print(f"  Augmented -> Real:          {acc_ar:.4f} ({'+' if acc_ar >= acc_rr else ''}{(acc_ar - acc_rr)*100:.1f}%)")
+        # Augmented-Diffusion -> Real
+        X_aug_diff = np.vstack([X_train, X_synthetic])
+        y_aug_diff = np.concatenate([y_train, y_synthetic])
+        clf_aug_diff = type(clf)(**clf.get_params())
+        acc_aug_diff, _ = evaluate_classifier(clf_aug_diff, X_aug_diff, y_aug_diff, X_test, y_test)
+
+        # Augmented-SMOTE -> Real
+        X_aug_smote = np.vstack([X_train, X_smote])
+        y_aug_smote = np.concatenate([y_train, y_smote])
+        clf_aug_smote = type(clf)(**clf.get_params())
+        acc_aug_smote, _ = evaluate_classifier(clf_aug_smote, X_aug_smote, y_aug_smote, X_test, y_test)
+
+        print(f"  Real -> Real (baseline):      {acc_rr:.4f}")
+        print(f"  Diffusion -> Real:            {acc_diff:.4f} ({'+' if acc_diff >= acc_rr else ''}{(acc_diff - acc_rr)*100:.1f}%)")
+        print(f"  SMOTE -> Real:                {acc_smote:.4f} ({'+' if acc_smote >= acc_rr else ''}{(acc_smote - acc_rr)*100:.1f}%)")
+        print(f"  Augmented-Diffusion -> Real:  {acc_aug_diff:.4f} ({'+' if acc_aug_diff >= acc_rr else ''}{(acc_aug_diff - acc_rr)*100:.1f}%)")
+        print(f"  Augmented-SMOTE -> Real:      {acc_aug_smote:.4f} ({'+' if acc_aug_smote >= acc_rr else ''}{(acc_aug_smote - acc_rr)*100:.1f}%)")
 
         results[clf_name] = {
             'real_to_real': acc_rr,
-            'synthetic_to_real': acc_sr,
-            'augmented_to_real': acc_ar,
+            'diffusion_to_real': acc_diff,
+            'smote_to_real': acc_smote,
+            'aug_diffusion_to_real': acc_aug_diff,
+            'aug_smote_to_real': acc_aug_smote,
         }
 
-    # Print confusion matrix for best augmented model
+    # Print confusion matrices
     print("\n" + "=" * 60)
-    print("Confusion Matrix (Random Forest, Augmented -> Real)")
+    print("Confusion Matrices (Random Forest)")
     print("=" * 60)
 
-    clf_final = RandomForestClassifier(n_estimators=100, random_state=42)
-    clf_final.fit(X_augmented, y_augmented)
-    y_pred_final = clf_final.predict(X_test)
+    # Augmented-Diffusion
+    clf_diff_final = RandomForestClassifier(n_estimators=100, random_state=42)
+    clf_diff_final.fit(X_aug_diff, y_aug_diff)
+    y_pred_diff = clf_diff_final.predict(X_test)
+    cm_diff = confusion_matrix(y_test, y_pred_diff)
 
-    cm = confusion_matrix(y_test, y_pred_final)
-    print(f"\n{cm}")
+    # Augmented-SMOTE
+    clf_smote_final = RandomForestClassifier(n_estimators=100, random_state=42)
+    clf_smote_final.fit(X_aug_smote, y_aug_smote)
+    y_pred_smote = clf_smote_final.predict(X_test)
+    cm_smote = confusion_matrix(y_test, y_pred_smote)
 
-    print("\nClassification Report:")
-    print(classification_report(y_test, y_pred_final, target_names=['setosa', 'versicolor', 'virginica']))
+    print("\nAugmented-Diffusion:")
+    print(cm_diff)
+    print("\nAugmented-SMOTE:")
+    print(cm_smote)
+
+    print("\nClassification Report (Augmented-Diffusion):")
+    print(classification_report(y_test, y_pred_diff, target_names=['setosa', 'versicolor', 'virginica']))
 
     # Summary
     print("\n" + "=" * 60)
-    print("SUMMARY")
+    print("SUMMARY: Diffusion vs SMOTE")
     print("=" * 60)
     for clf_name, res in results.items():
-        delta_sr = (res['synthetic_to_real'] - res['real_to_real']) * 100
-        delta_ar = (res['augmented_to_real'] - res['real_to_real']) * 100
         print(f"\n{clf_name}:")
-        print(f"  ML Efficiency (Syn->Real vs Real->Real): {delta_sr:+.1f}%")
-        print(f"  Augmentation benefit (Aug->Real vs Real->Real): {delta_ar:+.1f}%")
+        print(f"  Baseline (Real->Real):        {res['real_to_real']:.4f}")
+        print(f"  Diffusion only:               {res['diffusion_to_real']:.4f} ({(res['diffusion_to_real'] - res['real_to_real'])*100:+.1f}%)")
+        print(f"  SMOTE only:                   {res['smote_to_real']:.4f} ({(res['smote_to_real'] - res['real_to_real'])*100:+.1f}%)")
+        print(f"  Augmented-Diffusion:          {res['aug_diffusion_to_real']:.4f} ({(res['aug_diffusion_to_real'] - res['real_to_real'])*100:+.1f}%)")
+        print(f"  Augmented-SMOTE:              {res['aug_smote_to_real']:.4f} ({(res['aug_smote_to_real'] - res['real_to_real'])*100:+.1f}%)")
+
+        # Direct comparison
+        diff_vs_smote = res['aug_diffusion_to_real'] - res['aug_smote_to_real']
+        if diff_vs_smote > 0:
+            print(f"  --> Diffusion beats SMOTE by {diff_vs_smote*100:.1f}%")
+        elif diff_vs_smote < 0:
+            print(f"  --> SMOTE beats Diffusion by {-diff_vs_smote*100:.1f}%")
+        else:
+            print(f"  --> Diffusion and SMOTE perform equally")
 
     # Save synthetic data if output directory specified
     if args.output:
