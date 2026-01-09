@@ -78,10 +78,23 @@ Accuracy: 96.67% | Precision: 97% | Recall: 97% | F1: 97%
 - No categorical features tested (Gaussian diffusion only)
 - Label assignment via nearest neighbor is naive
 
+## Figures
+
+Generated visualizations for presentation/report:
+
+| Figure | Description |
+|--------|-------------|
+| `figures/ml_efficiency.png` | Bar chart comparing Real/Synthetic/Augmented scenarios |
+| `figures/confusion_matrix_baseline.png` | Confusion matrix for Real -> Real |
+| `figures/confusion_matrix_augmented.png` | Confusion matrix for Augmented -> Real |
+| `figures/distributions.png` | Real vs Synthetic feature distributions |
+| `figures/correlations.png` | Correlation matrix comparison |
+
 ## Files
 
 - **Training script:** `src/train.py`
 - **Evaluation script:** `src/evaluate.py`
+- **Report generator:** `src/report.py`
 - **Notebook:** `notebooks/01_diffusion_explained.ipynb`
 - **Checkpoints:** `checkpoints/iris/`
 - **Source code:** `src/diffusion.py`, `src/models.py`
@@ -94,4 +107,7 @@ uv run python src/train.py --dataset iris --epochs 500 --device cuda
 
 # Evaluate
 uv run python src/evaluate.py --checkpoint checkpoints/iris/final_model.pt --device cuda
+
+# Generate report figures
+uv run python src/report.py --experiment experiment-001-iris-baseline --device cuda
 ```
