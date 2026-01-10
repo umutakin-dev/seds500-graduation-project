@@ -139,6 +139,13 @@ def assign_labels_knn(X_synthetic, X_train, y_train, n_neighbors=5):
     return knn.predict(X_synthetic)
 
 
+def assign_labels_proportional(n_samples, y_train):
+    """Assign labels proportionally matching training distribution."""
+    class_counts = np.bincount(y_train)
+    class_probs = class_counts / len(y_train)
+    return np.random.choice(len(class_counts), size=n_samples, p=class_probs)
+
+
 def evaluate_classifier(clf_class, clf_params, X_train, y_train, X_test, y_test):
     """Train and evaluate a classifier."""
     clf = clf_class(**clf_params)
@@ -203,8 +210,24 @@ def main():
         data["cat_cardinalities"],
         data["scaler"],
     )
-    y_diff = assign_labels_knn(X_diff, X_train_ml, y_train)
-    print(f"Diffusion label distribution: {np.bincount(y_diff)}")
+
+    # Try KNN labeling first
+    y_diff_knn = assign_labels_knn(X_diff, X_train_ml, y_train)
+    knn_classes = len(np.unique(y_diff_knn))
+    print(f"Diffusion KNN labels: {np.bincount(y_diff_knn)} ({knn_classes} classes)")
+
+    # Also try proportional labeling (fallback if KNN gives single class)
+    y_diff_prop = assign_labels_proportional(len(X_diff), y_train)
+    print(f"Diffusion proportional labels: {np.bincount(y_diff_prop)}")
+
+    # Use KNN if it gives both classes, otherwise use proportional
+    if knn_classes >= 2:
+        y_diff = y_diff_knn
+        label_method = "KNN"
+    else:
+        y_diff = y_diff_prop
+        label_method = "Proportional (KNN single-class fallback)"
+    print(f"Using: {label_method}")
 
     # Generate SMOTE samples (SMOTE only adds minority class samples to balance)
     print("\nGenerating SMOTE samples...")
@@ -227,6 +250,8 @@ def main():
     ]
 
     results = {}
+    skip_diff_only = (label_method != "KNN")  # Skip diffusion-only if using random labels
+
     for clf_name, clf_class, clf_params in classifiers:
         print(f"\n{clf_name}:")
         print("-" * 50)
@@ -234,8 +259,11 @@ def main():
         # Real -> Real
         res_rr = evaluate_classifier(clf_class, clf_params, X_train_ml, y_train, X_test_ml, y_test)
 
-        # Diffusion only -> Real
-        res_diff = evaluate_classifier(clf_class, clf_params, X_diff, y_diff, X_test_ml, y_test)
+        # Diffusion only -> Real (skip if using proportional labels - meaningless)
+        if not skip_diff_only:
+            res_diff = evaluate_classifier(clf_class, clf_params, X_diff, y_diff, X_test_ml, y_test)
+        else:
+            res_diff = {"accuracy": 0, "f1": 0, "y_pred": None}
 
         # Augmented-Diffusion -> Real
         res_aug_diff = evaluate_classifier(clf_class, clf_params, X_aug_diff, y_aug_diff, X_test_ml, y_test)
@@ -244,7 +272,10 @@ def main():
         res_aug_smote = evaluate_classifier(clf_class, clf_params, X_aug_smote, y_aug_smote, X_test_ml, y_test)
 
         print(f"  Real -> Real (baseline):      Acc={res_rr['accuracy']:.4f}, F1={res_rr['f1']:.4f}")
-        print(f"  Diffusion only -> Real:       Acc={res_diff['accuracy']:.4f}, F1={res_diff['f1']:.4f} ({(res_diff['accuracy'] - res_rr['accuracy'])*100:+.2f}%)")
+        if not skip_diff_only:
+            print(f"  Diffusion only -> Real:       Acc={res_diff['accuracy']:.4f}, F1={res_diff['f1']:.4f} ({(res_diff['accuracy'] - res_rr['accuracy'])*100:+.2f}%)")
+        else:
+            print(f"  Diffusion only -> Real:       SKIPPED (using proportional labels)")
         print(f"  Augmented-Diffusion -> Real:  Acc={res_aug_diff['accuracy']:.4f}, F1={res_aug_diff['f1']:.4f} ({(res_aug_diff['accuracy'] - res_rr['accuracy'])*100:+.2f}%)")
         print(f"  SMOTE (balanced) -> Real:     Acc={res_aug_smote['accuracy']:.4f}, F1={res_aug_smote['f1']:.4f} ({(res_aug_smote['accuracy'] - res_rr['accuracy'])*100:+.2f}%)")
 
