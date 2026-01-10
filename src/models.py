@@ -249,3 +249,107 @@ class ResidualMLPDenoiser(nn.Module):
         out = self.output_proj(h)
 
         return out
+
+
+class HybridMLPDenoiser(nn.Module):
+    """
+    MLP-based denoising network for hybrid (numerical + categorical) tabular diffusion.
+
+    Outputs:
+    - Noise prediction for numerical features (for Gaussian diffusion)
+    - Class logits for each categorical feature (for Multinomial diffusion)
+
+    Output format: [noise_pred (num_numerical), cat_1_logits (card_1), cat_2_logits (card_2), ...]
+    """
+
+    def __init__(
+        self,
+        num_numerical: int,
+        cat_cardinalities: List[int],
+        hidden_dims: List[int] = [256, 256, 256],
+        dropout: float = 0.0,
+        num_classes: int = 0,
+        dim_t: int = 128,
+    ):
+        """
+        Args:
+            num_numerical: Number of numerical features
+            cat_cardinalities: List of cardinalities for each categorical feature
+            hidden_dims: List of hidden layer dimensions
+            dropout: Dropout rate
+            num_classes: Number of classes for conditional generation (0 = unconditional)
+            dim_t: Dimension of timestep embedding
+        """
+        super().__init__()
+        self.num_numerical = num_numerical
+        self.cat_cardinalities = cat_cardinalities
+        self.cat_dims = sum(cat_cardinalities)
+        self.d_in = num_numerical + self.cat_dims
+        self.d_out = num_numerical + self.cat_dims  # Same as input
+        self.dim_t = dim_t
+        self.num_classes = num_classes
+
+        # Time embedding network
+        self.time_embed = nn.Sequential(
+            nn.Linear(dim_t, dim_t),
+            SiLU(),
+            nn.Linear(dim_t, dim_t),
+        )
+
+        # Optional class embedding
+        if num_classes > 0:
+            self.label_embed = nn.Embedding(num_classes, dim_t)
+        else:
+            self.label_embed = None
+
+        # Input projection
+        self.input_proj = nn.Linear(self.d_in, dim_t)
+
+        # MLP blocks
+        dims = [dim_t] + hidden_dims
+        self.blocks = nn.ModuleList([
+            MLPBlock(dims[i], dims[i + 1], dropout)
+            for i in range(len(dims) - 1)
+        ])
+
+        # Output projection: noise for numerical + logits for categoricals
+        self.output_proj = nn.Linear(hidden_dims[-1], self.d_out)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        t: torch.Tensor,
+        y: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        """
+        Forward pass of the hybrid denoiser.
+
+        Args:
+            x: Noisy input data [batch_size, num_numerical + cat_dims]
+            t: Timesteps [batch_size]
+            y: Optional class labels [batch_size]
+
+        Returns:
+            [batch_size, num_numerical + cat_dims]
+            First num_numerical dims: predicted noise
+            Rest: logits for each categorical feature
+        """
+        # Get timestep embedding
+        t_emb = self.time_embed(timestep_embedding(t, self.dim_t))
+
+        # Add label embedding if conditional
+        if self.label_embed is not None and y is not None:
+            y_emb = self.label_embed(y)
+            t_emb = t_emb + y_emb
+
+        # Project input and add embeddings
+        h = self.input_proj(x) + t_emb
+
+        # Pass through MLP blocks
+        for block in self.blocks:
+            h = block(h)
+
+        # Output projection
+        out = self.output_proj(h)
+
+        return out

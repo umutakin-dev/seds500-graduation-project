@@ -13,10 +13,16 @@ Implement multinomial diffusion to handle categorical features (TabDDPM approach
 - Reference: TabDDPM paper Section 3.2
 
 ## Key Components
-- [ ] Multinomial forward process (add categorical noise)
-- [ ] Multinomial reverse process (denoise categories)
-- [ ] Hybrid model combining Gaussian + Multinomial
+- [x] Multinomial forward process (add categorical noise)
+- [x] Multinomial reverse process (denoise categories)
+- [x] Hybrid model combining Gaussian + Multinomial
 - [ ] Test on dataset with mixed feature types (e.g., Adult)
 
+## Implementation Details
+- `MultinomialDiffusion` class in `src/diffusion.py`
+- `HybridDiffusion` class combining Gaussian + Multinomial
+- `HybridMLPDenoiser` in `src/models.py`
+
 ## Status
-- [ ] Not started
+- [x] Core implementation complete (2026-01-11)
+- [ ] Awaiting Adult dataset experiment for validation
