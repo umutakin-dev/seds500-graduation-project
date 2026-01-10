@@ -29,6 +29,7 @@ from sklearn.metrics import (
     mean_squared_error, mean_absolute_error, r2_score
 )
 from imblearn.over_sampling import SMOTE
+import smogn
 
 from diffusion import GaussianDiffusion
 from models import MLPDenoiser
@@ -121,6 +122,30 @@ def generate_gaussian_noise_augmentation(X_train, y_train, n_samples, noise_scal
     X_noise = X_train[indices] + np.random.normal(0, noise_scale, (n_samples, X_train.shape[1]))
     y_noise = y_train[indices]
     return X_noise, y_noise
+
+
+def generate_smogn_augmentation(X_train, y_train, feature_names):
+    """Generate augmented data using SMOGN (SMOTE for regression)."""
+    df = pd.DataFrame(X_train, columns=feature_names)
+    df['target'] = y_train
+
+    try:
+        df_smogn = smogn.smoter(
+            data=df,
+            y='target',
+            samp_method='extreme'
+        )
+        n_original = len(X_train)
+        if len(df_smogn) > n_original:
+            X_smogn = df_smogn[feature_names].values[n_original:]
+            y_smogn = df_smogn['target'].values[n_original:]
+        else:
+            X_smogn = df_smogn[feature_names].values
+            y_smogn = df_smogn['target'].values
+        return X_smogn, y_smogn, True
+    except Exception as e:
+        print(f"    SMOGN failed: {e}")
+        return None, None, False
 
 
 # =============================================================================
@@ -321,13 +346,21 @@ def run_regression_evaluation(data, model, diffusion, device, n_synthetic, outpu
     print(f"    Generated target range: [{y_synthetic.min():.2f}, {y_synthetic.max():.2f}]")
     print(f"    Real target range:      [{y_train.min():.2f}, {y_train.max():.2f}]")
 
-    # Generate Gaussian noise augmentation (SMOTE doesn't apply to regression)
+    # Generate Gaussian noise augmentation
     print("\n[4] Generating Gaussian noise samples for comparison...")
     X_noise, y_noise = generate_gaussian_noise_augmentation(X_train, y_train, n_synthetic, noise_scale=0.1)
     print(f"    Noise samples generated: {len(X_noise)}")
 
+    # Generate SMOGN augmentation (SMOTE for regression)
+    print("\n[5] Generating SMOGN samples for comparison...")
+    X_smogn, y_smogn, smogn_success = generate_smogn_augmentation(X_train, y_train, feature_names)
+    if smogn_success:
+        print(f"    SMOGN samples generated: {len(X_smogn)}")
+    else:
+        print("    SMOGN skipped (failed)")
+
     # Evaluate
-    print("\n[5] Evaluating ML models...")
+    print("\n[6] Evaluating ML models...")
     print("=" * 60)
 
     regressors = [
@@ -340,6 +373,11 @@ def run_regression_evaluation(data, model, diffusion, device, n_synthetic, outpu
     y_aug_diff = np.concatenate([y_train, y_synthetic])
     X_aug_noise = np.vstack([X_train, X_noise])
     y_aug_noise = np.concatenate([y_train, y_noise])
+
+    # Prepare SMOGN augmentation if successful
+    if smogn_success:
+        X_aug_smogn = np.vstack([X_train, X_smogn])
+        y_aug_smogn = np.concatenate([y_train, y_smogn])
 
     for reg_name, reg in regressors:
         print(f"\n{reg_name}:")
@@ -354,6 +392,13 @@ def run_regression_evaluation(data, model, diffusion, device, n_synthetic, outpu
         # Noise -> Real
         res_noise = evaluate_regressor(type(reg)(**reg.get_params()), X_noise, y_noise, X_test, y_test)
 
+        # SMOGN -> Real (if available)
+        res_smogn = None
+        res_aug_smogn = None
+        if smogn_success:
+            res_smogn = evaluate_regressor(type(reg)(**reg.get_params()), X_smogn, y_smogn, X_test, y_test)
+            res_aug_smogn = evaluate_regressor(type(reg)(**reg.get_params()), X_aug_smogn, y_aug_smogn, X_test, y_test)
+
         # Augmented-Diffusion -> Real
         res_aug_diff = evaluate_regressor(type(reg)(**reg.get_params()), X_aug_diff, y_aug_diff, X_test, y_test)
 
@@ -363,15 +408,21 @@ def run_regression_evaluation(data, model, diffusion, device, n_synthetic, outpu
         print(f"  Real -> Real (baseline):      R2={res_rr['r2']:.4f}, RMSE={res_rr['rmse']:.4f}")
         print(f"  Diffusion -> Real:            R2={res_diff['r2']:.4f}, RMSE={res_diff['rmse']:.4f} ({(res_diff['r2'] - res_rr['r2'])*100:+.2f}%)")
         print(f"  Noise -> Real:                R2={res_noise['r2']:.4f}, RMSE={res_noise['rmse']:.4f} ({(res_noise['r2'] - res_rr['r2'])*100:+.2f}%)")
+        if smogn_success:
+            print(f"  SMOGN -> Real:                R2={res_smogn['r2']:.4f}, RMSE={res_smogn['rmse']:.4f} ({(res_smogn['r2'] - res_rr['r2'])*100:+.2f}%)")
         print(f"  Augmented-Diffusion -> Real:  R2={res_aug_diff['r2']:.4f}, RMSE={res_aug_diff['rmse']:.4f} ({(res_aug_diff['r2'] - res_rr['r2'])*100:+.2f}%)")
         print(f"  Augmented-Noise -> Real:      R2={res_aug_noise['r2']:.4f}, RMSE={res_aug_noise['rmse']:.4f} ({(res_aug_noise['r2'] - res_rr['r2'])*100:+.2f}%)")
+        if smogn_success:
+            print(f"  Augmented-SMOGN -> Real:      R2={res_aug_smogn['r2']:.4f}, RMSE={res_aug_smogn['rmse']:.4f} ({(res_aug_smogn['r2'] - res_rr['r2'])*100:+.2f}%)")
 
         results[reg_name] = {
             'real_to_real': res_rr,
             'diffusion_to_real': res_diff,
             'noise_to_real': res_noise,
+            'smogn_to_real': res_smogn,
             'aug_diffusion_to_real': res_aug_diff,
             'aug_noise_to_real': res_aug_noise,
+            'aug_smogn_to_real': res_aug_smogn,
         }
 
     # Summary
@@ -387,24 +438,34 @@ def run_regression_evaluation(data, model, diffusion, device, n_synthetic, outpu
 def print_regression_summary(results):
     """Print summary of regression results."""
     print("\n" + "=" * 60)
-    print("SUMMARY: Diffusion vs Gaussian Noise Augmentation")
+    print("SUMMARY: Diffusion vs SMOGN vs Noise Augmentation")
     print("=" * 60)
     for reg_name, res in results.items():
         baseline_r2 = res['real_to_real']['r2']
+        has_smogn = res.get('smogn_to_real') is not None
+
         print(f"\n{reg_name}:")
         print(f"  Baseline (Real->Real):        R2={baseline_r2:.4f}")
         print(f"  Diffusion only:               R2={res['diffusion_to_real']['r2']:.4f} ({(res['diffusion_to_real']['r2'] - baseline_r2)*100:+.2f}%)")
         print(f"  Noise only:                   R2={res['noise_to_real']['r2']:.4f} ({(res['noise_to_real']['r2'] - baseline_r2)*100:+.2f}%)")
+        if has_smogn:
+            print(f"  SMOGN only:                   R2={res['smogn_to_real']['r2']:.4f} ({(res['smogn_to_real']['r2'] - baseline_r2)*100:+.2f}%)")
         print(f"  Augmented-Diffusion:          R2={res['aug_diffusion_to_real']['r2']:.4f} ({(res['aug_diffusion_to_real']['r2'] - baseline_r2)*100:+.2f}%)")
         print(f"  Augmented-Noise:              R2={res['aug_noise_to_real']['r2']:.4f} ({(res['aug_noise_to_real']['r2'] - baseline_r2)*100:+.2f}%)")
+        if has_smogn:
+            print(f"  Augmented-SMOGN:              R2={res['aug_smogn_to_real']['r2']:.4f} ({(res['aug_smogn_to_real']['r2'] - baseline_r2)*100:+.2f}%)")
 
-        diff_vs_noise = res['aug_diffusion_to_real']['r2'] - res['aug_noise_to_real']['r2']
-        if diff_vs_noise > 0.001:
-            print(f"  --> Diffusion beats Noise by {diff_vs_noise*100:.2f}% R2")
-        elif diff_vs_noise < -0.001:
-            print(f"  --> Noise beats Diffusion by {-diff_vs_noise*100:.2f}% R2")
-        else:
-            print(f"  --> Diffusion and Noise perform similarly")
+        # Find best augmentation method
+        methods = {
+            'Diffusion': res['aug_diffusion_to_real']['r2'],
+            'Noise': res['aug_noise_to_real']['r2'],
+        }
+        if has_smogn:
+            methods['SMOGN'] = res['aug_smogn_to_real']['r2']
+
+        best_method = max(methods, key=methods.get)
+        best_r2 = methods[best_method]
+        print(f"  --> Best augmentation: {best_method} (R2={best_r2:.4f})")
 
 
 def save_regression_data(X_synthetic, y_synthetic, feature_names, output_dir):
