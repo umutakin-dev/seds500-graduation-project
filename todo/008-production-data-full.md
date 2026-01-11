@@ -26,21 +26,23 @@ Test hybrid diffusion (Gaussian + Multinomial) on production data with all featu
 - Various process flags (VAR/YOK)
 
 ## Dependencies
-- Implement multinomial diffusion (todo/001)
-- Create hybrid diffusion model
-- Feature selection analysis
+- [x] Implement multinomial diffusion (todo/001) - DONE
+- [x] Create hybrid diffusion model - DONE
+- [x] Class-conditional diffusion (todo/009) - DONE
+- [ ] Feature selection analysis
+- [ ] Experiment 007 (numeric baseline) - recommended first
 
 ## Success Criteria
 - Hybrid model handles mixed data types
-- Compare with Experiment 003 baseline
+- Compare with Experiment 007 baseline
 - Demonstrate value of categorical features
 - Outperform simple augmentation methods
 
 ## Status
-- [ ] Complete multinomial diffusion implementation
+- [x] Complete multinomial diffusion implementation
+- [x] Hybrid diffusion model ready
 - [ ] Feature selection analysis
-- [ ] Create hybrid diffusion model
 - [ ] Train on production data
 - [ ] Run evaluation for both targets
-- [ ] Compare with baseline (Experiment 003)
+- [ ] Compare with baseline (Experiment 007)
 - [ ] Document findings

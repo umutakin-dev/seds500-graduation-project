@@ -16,7 +16,7 @@ Implement multinomial diffusion to handle categorical features (TabDDPM approach
 - [x] Multinomial forward process (add categorical noise)
 - [x] Multinomial reverse process (denoise categories)
 - [x] Hybrid model combining Gaussian + Multinomial
-- [ ] Test on dataset with mixed feature types (e.g., Adult)
+- [x] Test on dataset with mixed feature types (Adult)
 
 ## Implementation Details
 - `MultinomialDiffusion` class in `src/diffusion.py`
@@ -25,4 +25,4 @@ Implement multinomial diffusion to handle categorical features (TabDDPM approach
 
 ## Status
 - [x] Core implementation complete (2026-01-11)
-- [ ] Awaiting Adult dataset experiment for validation
+- [x] Validated on Adult dataset (Experiment 003)
