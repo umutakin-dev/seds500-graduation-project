@@ -251,6 +251,194 @@ def prepare_numeric_data(df, target_col="kar_marji", test_size=0.2):
     }
 
 
+def prepare_full_data(df, target_col="teklif_miktari", test_size=0.2, min_category_freq=50):
+    """
+    Prepare full data (numeric + categorical) for HybridDiffusion.
+
+    Args:
+        df: DataFrame with production data
+        target_col: Target column key
+        test_size: Fraction for test split
+        min_category_freq: Minimum frequency for a category to be kept (others -> "Other")
+
+    Returns dict with train/test splits and preprocessing objects.
+    """
+    print("\n" + "=" * 80)
+    print("PREPARING FULL DATA (NUMERIC + CATEGORICAL)")
+    print("=" * 80)
+
+    target = TARGET_COLS[target_col]
+    print(f"Target: {target}")
+
+    # Identify columns by type
+    exclude_patterns = ["id", "numara", "kod", "tarih", "date", "tanım", "malzeme"]
+
+    numerical_cols = []
+    categorical_cols = []
+
+    for col in df.columns:
+        if col == target:
+            continue
+        col_lower = col.lower()
+        if any(p in col_lower for p in exclude_patterns):
+            continue
+
+        # Check fill rate
+        fill_rate = df[col].notna().sum() / len(df)
+        if fill_rate < 0.5:  # Skip columns with <50% fill rate
+            continue
+
+        dtype = df[col].dtype
+        unique = df[col].nunique()
+
+        if dtype in ["float64", "int64"]:
+            if unique > 10:  # Treat as numeric if >10 unique values
+                numerical_cols.append(col)
+            else:
+                categorical_cols.append(col)
+        elif dtype == "object":
+            # Try parsing as number
+            sample = df[col].dropna().head(20)
+            numeric_count = sum(
+                isinstance(v, (int, float)) or
+                (isinstance(v, str) and v.replace(".", "").replace(",", "").replace("-", "").replace(" ", "").isdigit())
+                for v in sample
+            )
+            if numeric_count > len(sample) * 0.8 and unique > 20:
+                numerical_cols.append(col)
+            elif unique <= 50:  # Limit categorical cardinality
+                categorical_cols.append(col)
+
+    print(f"Selected {len(numerical_cols)} numeric columns")
+    print(f"Selected {len(categorical_cols)} categorical columns")
+
+    # Parse target
+    if df[target].dtype == "object":
+        y = df[target].apply(parse_turkish_number).values
+    else:
+        y = df[target].values.astype(float)
+
+    # Remove rows with missing target
+    valid_mask = ~np.isnan(y)
+    df_valid = df[valid_mask].copy()
+    y = y[valid_mask]
+
+    print(f"After removing missing targets: {len(df_valid)} rows")
+
+    # Process numerical columns
+    X_num = []
+    valid_num_cols = []
+    for col in numerical_cols:
+        if df_valid[col].dtype == "object":
+            values = df_valid[col].apply(parse_turkish_number).values
+        else:
+            values = df_valid[col].values.astype(float)
+
+        # Impute with median
+        median = np.nanmedian(values)
+        values = np.where(np.isnan(values), median, values)
+        X_num.append(values)
+        valid_num_cols.append(col)
+
+    X_num = np.column_stack(X_num) if X_num else np.zeros((len(df_valid), 0))
+
+    # Process categorical columns
+    label_encoders = {}
+    cat_cardinalities = []
+    X_cat = []
+    valid_cat_cols = []
+
+    for col in categorical_cols:
+        # Fill missing with "Missing"
+        values = df_valid[col].fillna("Missing").astype(str)
+
+        # Group rare categories into "Other"
+        value_counts = values.value_counts()
+        rare_cats = value_counts[value_counts < min_category_freq].index
+        values = values.replace(rare_cats, "Other")
+
+        # Encode
+        le = LabelEncoder()
+        encoded = le.fit_transform(values)
+        label_encoders[col] = le
+        cat_cardinalities.append(len(le.classes_))
+        X_cat.append(encoded)
+        valid_cat_cols.append(col)
+
+    X_cat = np.column_stack(X_cat) if X_cat else np.zeros((len(df_valid), 0), dtype=np.int64)
+
+    print(f"\nFinal columns:")
+    print(f"  Numeric: {len(valid_num_cols)}")
+    print(f"  Categorical: {len(valid_cat_cols)}")
+    print(f"  Categorical cardinalities: {cat_cardinalities}")
+
+    # Train/test split (keeping indices aligned)
+    indices = np.arange(len(df_valid))
+    train_idx, test_idx = train_test_split(indices, test_size=test_size, random_state=42)
+
+    X_num_train, X_num_test = X_num[train_idx], X_num[test_idx]
+    X_cat_train, X_cat_test = X_cat[train_idx], X_cat[test_idx]
+    y_train, y_test = y[train_idx], y[test_idx]
+
+    # Scale numerical features
+    scaler = QuantileTransformer(output_distribution="normal", random_state=42)
+    X_num_train_scaled = scaler.fit_transform(X_num_train)
+    X_num_test_scaled = scaler.transform(X_num_test)
+    X_num_train_scaled = np.clip(X_num_train_scaled, -3, 3) / 3
+    X_num_test_scaled = np.clip(X_num_test_scaled, -3, 3) / 3
+
+    # Scale target (treat as additional numeric feature)
+    target_scaler = QuantileTransformer(output_distribution="normal", random_state=42)
+    y_train_scaled = target_scaler.fit_transform(y_train.reshape(-1, 1)).flatten()
+    y_test_scaled = target_scaler.transform(y_test.reshape(-1, 1)).flatten()
+    y_train_scaled = np.clip(y_train_scaled, -3, 3) / 3
+    y_test_scaled = np.clip(y_test_scaled, -3, 3) / 3
+
+    # Include target as last numerical feature
+    X_num_train_scaled = np.column_stack([X_num_train_scaled, y_train_scaled])
+    X_num_test_scaled = np.column_stack([X_num_test_scaled, y_test_scaled])
+
+    # Convert categorical to one-hot
+    def to_onehot(X_cat, cardinalities):
+        batch_size = X_cat.shape[0]
+        onehot_list = []
+        for i, card in enumerate(cardinalities):
+            onehot = np.zeros((batch_size, card), dtype=np.float32)
+            onehot[np.arange(batch_size), X_cat[:, i]] = 1.0
+            onehot_list.append(onehot)
+        return np.hstack(onehot_list) if onehot_list else np.zeros((batch_size, 0), dtype=np.float32)
+
+    X_cat_train_onehot = to_onehot(X_cat_train, cat_cardinalities)
+    X_cat_test_onehot = to_onehot(X_cat_test, cat_cardinalities)
+
+    # Combine: [numerical (including target), categorical_onehot]
+    X_train = np.hstack([X_num_train_scaled, X_cat_train_onehot]).astype(np.float32)
+    X_test = np.hstack([X_num_test_scaled, X_cat_test_onehot]).astype(np.float32)
+
+    num_numerical = X_num_train_scaled.shape[1]  # Includes target
+
+    print(f"\nFinal shapes:")
+    print(f"  Train: {X_train.shape}")
+    print(f"  Test: {X_test.shape}")
+    print(f"  Numerical dims: {num_numerical} (including target)")
+    print(f"  Categorical dims: {sum(cat_cardinalities)}")
+
+    return {
+        "X_train": X_train,
+        "X_test": X_test,
+        "y_train": y_train,
+        "y_test": y_test,
+        "num_numerical": num_numerical,
+        "cat_cardinalities": cat_cardinalities,
+        "numerical_cols": valid_num_cols + [target],  # Include target
+        "categorical_cols": valid_cat_cols,
+        "target_col": target,
+        "scaler": scaler,
+        "target_scaler": target_scaler,
+        "label_encoders": label_encoders,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=["explore", "numeric", "full"], default="explore")
@@ -292,8 +480,35 @@ def main():
             print(f"Preprocessors saved to {preprocessor_path}")
 
     elif args.mode == "full":
-        print("Full mode (with categorical) not yet implemented")
-        print("Use --mode numeric for now")
+        data = prepare_full_data(df, target_col=args.target)
+
+        if args.output:
+            output_path = Path(args.output)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Save tensors
+            torch.save({
+                "X_train": torch.tensor(data["X_train"]),
+                "X_test": torch.tensor(data["X_test"]),
+                "y_train": data["y_train"],
+                "y_test": data["y_test"],
+                "num_numerical": data["num_numerical"],
+                "cat_cardinalities": data["cat_cardinalities"],
+                "numerical_cols": data["numerical_cols"],
+                "categorical_cols": data["categorical_cols"],
+                "target_col": data["target_col"],
+            }, output_path)
+            print(f"\nData saved to {output_path}")
+
+            # Save preprocessors
+            preprocessor_path = output_path.parent / "preprocessors_full.pkl"
+            with open(preprocessor_path, "wb") as f:
+                pickle.dump({
+                    "scaler": data["scaler"],
+                    "target_scaler": data["target_scaler"],
+                    "label_encoders": data["label_encoders"],
+                }, f)
+            print(f"Preprocessors saved to {preprocessor_path}")
 
 
 if __name__ == "__main__":
