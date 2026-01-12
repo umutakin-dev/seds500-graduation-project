@@ -5,6 +5,9 @@ papers/
 # Claude Code notes (private)
 CLAUDE.md
 
+# Private notes (Q&A prep, drafts, etc.)
+notes/
+
 # Python
 __pycache__/
 *.py[cod]
