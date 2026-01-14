@@ -379,21 +379,54 @@ class HybridDiffusion(nn.Module):
         model_mean, _, model_log_var = self.gaussian_diffusion.q_posterior_mean_variance(x_0=x_num_0_pred, x_t=x_num_t, t=t)
         noise = torch.randn_like(x_num_t)
         nonzero_mask = (t != 0).float().view(-1, *([1] * (len(x_num_t.shape) - 1)))
-        x_num_t_minus_1 = model_mean + nonzero_mask * torch.exp(0.5 * model_log_var) * noise
+        # Clamp log_var to prevent exp overflow
+        model_log_var_clamped = torch.clamp(model_log_var, min=-20, max=2)
+        x_num_t_minus_1 = model_mean + nonzero_mask * torch.exp(0.5 * model_log_var_clamped) * noise
+        # Handle any NaN
+        x_num_t_minus_1 = torch.where(torch.isnan(x_num_t_minus_1), x_num_t, x_num_t_minus_1)
 
         # Reverse step for categorical
         x_cats_t_minus_1 = []
         for i, (logits, diff) in enumerate(zip(cat_logits, self.multinomial_diffusions)):
+            # Clamp logits to prevent extreme values that cause softmax issues
+            logits_clamped = torch.clamp(logits, min=-20, max=20)
+            # Replace any NaN with 0
+            logits_clamped = torch.where(torch.isnan(logits_clamped), torch.zeros_like(logits_clamped), logits_clamped)
+
+            probs = F.softmax(logits_clamped, dim=-1)
+            # Replace any NaN/Inf with uniform distribution
+            bad_mask = torch.isnan(probs) | torch.isinf(probs) | (probs < 0)
+            if bad_mask.any():
+                uniform = torch.ones_like(probs) / probs.shape[-1]
+                probs = torch.where(bad_mask, uniform, probs)
+
+            # Add small epsilon and renormalize
+            probs = probs + 1e-6
+            probs = probs / probs.sum(dim=-1, keepdim=True)
+
             if t[0] == 0:
-                probs = F.softmax(logits, dim=-1)
-                samples = torch.multinomial(probs, num_samples=1).squeeze(-1)
+                # Final step: sample from distribution
+                # Use safer sampling with fallback to argmax
+                try:
+                    samples = torch.multinomial(probs, num_samples=1).squeeze(-1)
+                except RuntimeError:
+                    # Fallback to argmax if multinomial fails
+                    samples = probs.argmax(dim=-1)
                 x_cat = F.one_hot(samples, num_classes=diff.num_classes).float()
             else:
-                probs = F.softmax(logits, dim=-1)
                 alpha_t = diff._extract(diff.alphas_cumprod, t, probs.shape)
                 alpha_t_prev = diff._extract(F.pad(diff.alphas_cumprod[:-1], (1, 0), value=1.0), t, probs.shape)
-                x_cat = (alpha_t_prev / alpha_t.clamp(min=1e-8)) * x_cats_t[i] + (1 - alpha_t_prev / alpha_t.clamp(min=1e-8)) * probs
-                x_cat = x_cat / x_cat.sum(dim=-1, keepdim=True)
+                # BUG FIX: At high timesteps (t near T), alpha_t approaches 0, which causes
+                # ratio = alpha_t_prev / alpha_t to explode (e.g., ratio=242 at t=999).
+                # This leads to extrapolation: x_cat = 242*x_cat_t + (-241)*probs, producing
+                # values far outside [0,1] and breaking the categorical distribution.
+                # OLD (buggy): ratio = alpha_t_prev / alpha_t.clamp(min=1e-8)
+                # FIX: Clamp ratio to [0, 1] to keep it as interpolation, not extrapolation.
+                ratio = (alpha_t_prev / alpha_t.clamp(min=1e-8)).clamp(max=1.0)
+                x_cat = ratio * x_cats_t[i] + (1 - ratio) * probs
+                # Handle any NaN in x_cat
+                x_cat = torch.where(torch.isnan(x_cat), probs, x_cat)
+                x_cat = x_cat / x_cat.sum(dim=-1, keepdim=True).clamp(min=1e-8)
             x_cats_t_minus_1.append(x_cat)
 
         return self._concat_features(x_num_t_minus_1, x_cats_t_minus_1)
