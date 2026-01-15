@@ -433,10 +433,14 @@ Membership inference attack:
 
 #### 5.1.1 Datasets
 
-| Dataset | Samples | Numerical | Categorical | Target | Complexity |
-|---------|---------|-----------|-------------|--------|------------|
-| Manufacturing | 18,000 | 2 | 0 | Duration | Simple |
-| Ozel Rich | 2,670 | 2 | 4 (26 one-hot) | Value | Complex |
+Both datasets come from a Turkish fastener manufacturing company and predict machine processing time for production planning.
+
+| Dataset | Domain | Samples | Features | Target | Baseline R² |
+|---------|--------|---------|----------|--------|-------------|
+| Manufacturing | Standard bolt production | 17,942 | 2 numeric (diameter, length) | Machine time (min/100k units) | 0.75 |
+| Ozel Rich | Custom fastener manufacturing | 2,670 | 2 numeric + 4 categorical (29 one-hot) | Machine time (min/100k units) | 0.65 |
+
+**Why these datasets?** They represent real organizational data where privacy-preserving synthetic generation has practical value—production parameters that cannot be shared with external partners. The two datasets also represent different complexity levels: Manufacturing (simple, 2D) tests basic functionality, while Ozel Rich (complex, 29D) tests handling of mixed-type, high-dimensional data.
 
 #### 5.1.2 Models Tested
 
@@ -496,6 +500,8 @@ Key findings:
 - **SMOGN fails catastrophically** on complex data with mixed types
 - **CTGAN achieves 35.5%** of baseline, acceptable for some use cases
 - **TabDDPM-style achieves 87.3%** of baseline, a breakthrough result
+
+*Note: The 0.5628 R² is from a single representative run. Validation across 5 independent runs confirms consistency: R² = 0.54 ± 0.02 (Section 5.6), demonstrating low variance in synthetic data quality.*
 
 #### 5.3.2 Augmentation Scenario (Original + Synthetic)
 
@@ -572,6 +578,8 @@ SMOGN generates samples by interpolating between existing points. In high-dimens
 - Interpolation produces unrealistic combinations
 - The method cannot handle discrete features properly
 - Generated samples fall outside the true data manifold
+
+**Why SMOGN fails even in augmentation:** Counter-intuitively, adding SMOGN synthetic data to real data (augmentation) produces *worse* results than using real data alone (R² drops from 0.6451 to -0.1354). This occurs because unrealistic synthetic samples corrupt training data quality—the model learns incorrect patterns from bad synthetic records, which hurts generalization more than the extra data volume helps. This is a critical finding: **SMOGN is not just "less effective" but actively harmful** on complex tabular data.
 
 #### 5.7.3 Practical Implications
 
