@@ -90,8 +90,20 @@ The key insight is that the original V6 implementation was using cross-entropy l
 - `src/test_experiment_018.py` - Evaluation script
 - `checkpoints/experiment_018/best_model.pt` - Trained model
 
+## Privacy Test (Membership Inference Attack)
+
+| Method | Attack AUC | Status |
+|--------|------------|--------|
+| V6 Diffusion (Exp 016) | 0.5116 | SAFE |
+| SMOGN (Exp 016) | 0.5253 | SAFE |
+| **Exp 018 (TabDDPM)** | **0.5103** | **EXCELLENT** |
+
+- AUC ~ 0.5 means attacker cannot determine if a record was in training set
+- Exp 018 is slightly MORE private than V6 while achieving 3x better utility
+
 ## Status
 [x] Implementation
 [x] Training
 [x] Evaluation
+[x] Privacy Test
 [x] Documentation
