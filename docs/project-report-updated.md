@@ -300,6 +300,17 @@ Our model is a **hybrid diffusion model** that generates synthetic tabular data 
 2. **Denoiser network**: 3-layer MLP (256 hidden units each) that predicts clean data from noisy input
 3. **Diffusion scheduler**: Controls noise levels across 1000 timesteps using cosine schedule [11]
 
+**Implementation approach:**
+
+Our implementation is a **reimplementation** of TabDDPM concepts, not a direct fork of the original codebase. We developed two versions iteratively:
+
+| Version | Approach | Result |
+|---------|----------|--------|
+| V6 (Simple) | Basic diffusion with cross-entropy loss for categoricals | 26.5% of baseline |
+| Exp 018 (TabDDPM-style) | Log-space ops, KL divergence loss, Gumbel-softmax | 87.3% of baseline |
+
+The 3.3x improvement from V6 to Exp 018 demonstrates the importance of the specific techniques introduced in the TabDDPM paper [1]. Our reimplementation allowed us to understand and validate each component's contribution.
+
 ### 4.2 What is the Baseline?
 
 **Baseline Definition:**
@@ -443,6 +454,16 @@ Membership inference attack:
 - Training: 1000 epochs, batch size 128, learning rate 1e-4
 - Diffusion: 1000 timesteps, cosine beta schedule
 
+#### 5.1.4 Computational Cost
+
+| Method | Training Time | Generation Time (2,670 samples) |
+|--------|--------------|--------------------------------|
+| SMOGN | < 1 minute | < 1 second |
+| CTGAN | ~10 minutes | ~2 seconds |
+| TabDDPM-style | ~5 minutes | ~30 seconds |
+
+Training times measured on RTX 4070 Ti Super. TabDDPM generation is slower due to the iterative denoising process (1000 steps), but remains practical for batch generation.
+
 ### 5.2 Experiment Summary
 
 **Table 3: All Experiments Overview**
@@ -582,9 +603,20 @@ This project demonstrated that diffusion models, specifically TabDDPM-style impl
 
 ### 6.3 Limitations
 
-- Evaluated on two datasets; more diverse evaluation needed
+**Dataset scope:**
+- Evaluated on two organizational datasets rather than standard public benchmarks (Adult, Covertype, etc.)
+- This was a deliberate choice: our research question focused on real-world applicability for privacy-preserving data sharing, not benchmark optimization
+- The TabDDPM paper [1] evaluated on 15 benchmarks; our project prioritized depth on practical datasets over breadth
+- Future work should validate on standard benchmarks for direct comparison with published results
+
+**Methodological:**
 - Did not implement TabSyn (latent diffusion) for comparison
-- Training requires GPU resources
+- CTGAN used default hyperparameters from the SDV library; tuned CTGAN might perform better
+- Privacy evaluation used basic membership inference; stronger attacks (shadow models, attribute inference) not tested
+
+**Practical:**
+- Training requires GPU resources (~5 minutes on RTX 4070 Ti)
+- Generation is slower than GAN-based methods (~30 seconds vs ~2 seconds for 2,670 samples)
 
 ### 6.4 Future Work
 
