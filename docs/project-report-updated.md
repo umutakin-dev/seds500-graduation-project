@@ -109,6 +109,41 @@ This project aims to:
 | **Privacy** | Unknown if safe | Validated: AUC=0.51 (no leak) |
 | **vs Alternatives** | CTGAN, SMOGN untested | TabDDPM beats both significantly |
 
+### 1.6 Research Journey: How This Project Evolved
+
+This project did not begin with privacy as the primary focus. Understanding our research journey provides important context for interpreting the results.
+
+**Original Problem:**
+We were trying to build a predictive model for manufacturing duration, but initial results were disappointing. The belief was that our dataset was too small or too noisy to train a good model. We turned to data augmentation as a potential solution—if we could generate more synthetic training samples, perhaps the model would improve.
+
+**What We Discovered:**
+Two surprising findings emerged:
+
+1. **The baseline was actually achievable.** Once we properly preprocessed the data and selected appropriate features, we achieved R² = 0.65—a reasonable baseline. The original "bad model" problem was not inherent to the dataset.
+
+2. **Augmentation didn't improve accuracy, but revealed a quality difference.** While testing augmentation methods:
+
+| Method | Observation |
+|--------|-------------|
+| SMOGN | Models trained on SMOGN-augmented data sometimes **completely failed** (R² went negative) |
+| Diffusion | Models trained on diffusion-augmented data **maintained performance** |
+
+This wasn't about improving accuracy—it was about **data quality**.
+
+**The Pivot:**
+With augmentation no longer necessary for our original goal, we recognized a different opportunity: if diffusion can generate high-quality synthetic data, it could address privacy concerns about sharing proprietary data.
+
+| Aspect | Original | Revised |
+|--------|----------|---------|
+| Problem | Can't build a good model | Need to share data without revealing real records |
+| Approach | Augmentation to improve accuracy | Synthetic generation for privacy |
+| Question | Can augmentation rescue a bad model? | Does diffusion produce realistic, privacy-safe data? |
+
+**Why This Pivot Matters:**
+The revised question addresses a real business problem: organizations need to share data for collaboration and ML development, but cannot share real records due to privacy concerns. Our finding that diffusion produces high-quality synthetic data (87% utility, no privacy leakage) directly solves this problem.
+
+*Sometimes the most interesting findings aren't what you set out to discover.*
+
 ---
 
 ## 2. BACKGROUND: WHAT ARE DIFFUSION MODELS?
