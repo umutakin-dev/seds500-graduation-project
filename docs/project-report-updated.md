@@ -12,7 +12,7 @@
 
 ## ABSTRACT
 
-Organizations increasingly need to share sensitive tabular data for machine learning while protecting individual privacy. This project investigates diffusion models as a privacy-preserving approach for generating synthetic tabular data. We implement and evaluate TabDDPM-style diffusion with hybrid Gaussian-Multinomial noise handling, comparing it against CTGAN and SMOGN baselines. Our experiments on manufacturing datasets demonstrate that TabDDPM-style diffusion achieves 87% of baseline model performance when training on synthetic data alone, significantly outperforming CTGAN (35%) and SMOGN (which fails catastrophically on complex data). Privacy validation through membership inference attacks confirms that the generated data leaks no information about training records (AUC = 0.51, equivalent to random guessing). These results establish diffusion models as a superior approach for generating high-utility, privacy-preserving synthetic tabular data.
+Organizations increasingly need to share sensitive tabular data for machine learning while protecting individual privacy. This project investigates diffusion models as a privacy-preserving approach for generating synthetic tabular data. We implement and evaluate TabDDPM-style diffusion with hybrid Gaussian-Multinomial noise handling, comparing it against CTGAN and SMOGN baselines. Our experiments on organizational datasets (sales quotation and manufacturing data from a fastener company) demonstrate that TabDDPM-style diffusion achieves 87% of baseline model performance when training on synthetic data alone, significantly outperforming CTGAN (35%) and SMOGN (which fails catastrophically on complex data). Privacy validation through membership inference attacks confirms that the generated data leaks no information about training records (AUC = 0.51, equivalent to random guessing). These results establish diffusion models as a superior approach for generating high-utility, privacy-preserving synthetic tabular data.
 
 ---
 
@@ -225,7 +225,7 @@ CTGAN has become a standard baseline for tabular data synthesis, achieving reaso
 
 ### 3.4 Diffusion Models for Tabular Data
 
-#### 3.4.1 TabDDPM (ICML 2023) — Our Primary Reference
+#### 3.4.1 TabDDPM (ICML 2023) - Our Primary Reference
 
 Kotelnikov et al. introduced TabDDPM, adapting denoising diffusion probabilistic models for tabular data.
 
@@ -262,7 +262,7 @@ Given three diffusion-based approaches (TabDDPM, STaSy, TabSyn), we chose TabDDP
 
 Our research question asks: _"Do diffusion models produce more realistic synthetic data than traditional methods?"_
 
-To answer this question, we need to compare **diffusion-based methods vs non-diffusion methods** (CTGAN, SMOGN). We do not need the most advanced diffusion variant—we need a representative, well-validated one. TabDDPM serves this purpose.
+To answer this question, we need to compare **diffusion-based methods vs non-diffusion methods** (CTGAN, SMOGN). We do not need the most advanced diffusion variant, we need a representative, well-validated one. TabDDPM serves this purpose.
 
 #### 3.5.2 Foundational Approach
 
@@ -292,7 +292,7 @@ TabSyn's latent-space approach provides the most benefit on large, high-dimensio
 
 | Dataset                 | Samples | Features | Latent Space Benefit          |
 | ----------------------- | ------- | -------- | ----------------------------- |
-| Manufacturing           | 17,942  | 2        | Low (already low-dimensional) |
+| Production              | 5,370   | 117      | Moderate                      |
 | Ozel Rich               | 2,670   | 29       | Moderate                      |
 | ImageNet (TabSyn paper) | 1.2M+   | 1000+    | High                          |
 
@@ -363,7 +363,7 @@ The 3.3x improvement from V6 to Exp 018 demonstrates the importance of the speci
 
 **Baseline Definition:**
 
-The **baseline** represents the best possible performance—training a machine learning model on the **original real data** and testing on held-out real data.
+The **baseline** represents the best possible performance, training a machine learning model on the **original real data** and testing on held-out real data.
 
 | Term             | Definition                              | R² Value         |
 | ---------------- | --------------------------------------- | ---------------- |
@@ -497,14 +497,19 @@ Membership inference attack:
 
 #### 5.1.1 Datasets
 
-Both datasets come from a Turkish fastener manufacturing company and predict machine processing time for production planning.
+Both datasets come from a Turkish fastener manufacturing company, representing different business processes within the same organization.
 
-| Dataset       | Domain                        | Samples | Features                               | Target                        | Baseline R² |
-| ------------- | ----------------------------- | ------- | -------------------------------------- | ----------------------------- | ----------- |
-| Manufacturing | Standard bolt production      | 17,942  | 2 numeric (diameter, length)           | Machine time (min/100k units) | 0.75        |
-| Ozel Rich     | Custom fastener manufacturing | 2,670   | 2 numeric + 4 categorical (29 one-hot) | Machine time (min/100k units) | 0.65        |
+| Dataset   | Domain                        | Samples | Features                               | Target                        | Baseline R² |
+| --------- | ----------------------------- | ------- | -------------------------------------- | ----------------------------- | ----------- |
+| Production | Sales quotation              | 5,370   | 7 numeric + 35 categorical (117 one-hot) | Quote amount (EUR)           | 0.92        |
+| Ozel Rich | Custom fastener manufacturing | 2,670   | 2 numeric + 4 categorical (29 one-hot) | Machine time (min/100k units) | 0.65        |
 
-**Why these datasets?** They represent real organizational data where privacy-preserving synthetic generation has practical value—production parameters that cannot be shared with external partners. The two datasets also represent different complexity levels: Manufacturing (simple, 2D) tests basic functionality, while Ozel Rich (complex, 29D) tests handling of mixed-type, high-dimensional data.
+**Why these datasets?** They represent real organizational data where privacy-preserving synthetic generation has practical value: quotation data and production parameters that cannot be shared with external partners. The two datasets also demonstrate generalization across different prediction tasks:
+
+- **Production**: Sales/quotation process - predicts pricing from product specifications
+- **Ozel Rich**: Manufacturing process - predicts machine time from product dimensions
+
+Using different targets (quote amount vs machine time) validates that diffusion models generalize across business use cases, not just one specific prediction task. Both datasets contain mixed types (numerical and categorical features), enabling fair comparison.
 
 **Data split:** 80% training / 20% test, with random shuffling. The same test set is used to evaluate all methods for fair comparison.
 
@@ -540,8 +545,7 @@ Training times measured on RTX 4070 Ti Super. TabDDPM generation is slower due t
 
 | Exp     | Dataset       | Purpose                | Key Finding                              |
 | ------- | ------------- | ---------------------- | ---------------------------------------- |
-| 010     | Manufacturing | Baseline establishment | R² = 0.75 achievable                     |
-| 011     | Manufacturing | Diffusion vs SMOGN     | SMOGN +70-84% worse                      |
+| 008     | Production    | Hybrid diffusion vs SMOGN | Diffusion beats SMOGN on all models   |
 | 012     | Ozel simple   | 5-feature test         | Methods comparable                       |
 | 013     | Ozel rich     | 29-feature test        | SMOGN catastrophic failure               |
 | 016     | Ozel rich     | Privacy validation     | Both methods safe                        |
@@ -657,7 +661,7 @@ SMOGN generates samples by interpolating between existing points. In high-dimens
 - The method cannot handle discrete features properly
 - Generated samples fall outside the true data manifold
 
-**Why SMOGN fails even in augmentation:** Counter-intuitively, adding SMOGN synthetic data to real data (augmentation) produces _worse_ results than using real data alone (R² drops from 0.6451 to -0.1354). This occurs because unrealistic synthetic samples corrupt training data quality—the model learns incorrect patterns from bad synthetic records, which hurts generalization more than the extra data volume helps. This is a critical finding: **SMOGN is not just "less effective" but actively harmful** on complex tabular data.
+**Why SMOGN fails even in augmentation:** Counter-intuitively, adding SMOGN synthetic data to real data (augmentation) produces _worse_ results than using real data alone (R² drops from 0.6451 to -0.1354). This occurs because unrealistic synthetic samples corrupt training data quality; the model learns incorrect patterns from bad synthetic records, which hurts generalization more than the extra data volume helps. This is a critical finding: **SMOGN is not just "less effective" but actively harmful** on complex tabular data.
 
 #### 5.7.3 Practical Implications
 
