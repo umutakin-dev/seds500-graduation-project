@@ -12,7 +12,7 @@
 
 ## ABSTRACT
 
-Organizations increasingly need to share sensitive tabular data for machine learning while protecting individual privacy. This project investigates diffusion models as a privacy-preserving approach for generating synthetic tabular data. We implement and evaluate TabDDPM-style diffusion with hybrid Gaussian-Multinomial noise handling, comparing it against CTGAN and SMOGN baselines. Our experiments on manufacturing and business datasets demonstrate that TabDDPM-style diffusion achieves 87% of baseline model performance when training on synthetic data alone, significantly outperforming CTGAN (35%) and SMOGN (which fails catastrophically on complex data). Privacy validation through membership inference attacks confirms that the generated data leaks no information about training records (AUC = 0.51, equivalent to random guessing). These results establish diffusion models as a superior approach for generating high-utility, privacy-preserving synthetic tabular data.
+Organizations increasingly need to share sensitive tabular data for machine learning while protecting individual privacy. This project investigates diffusion models as a privacy-preserving approach for generating synthetic tabular data. We implement and evaluate TabDDPM-style diffusion with hybrid Gaussian-Multinomial noise handling, comparing it against CTGAN and SMOGN baselines. Our experiments on manufacturing datasets demonstrate that TabDDPM-style diffusion achieves 87% of baseline model performance when training on synthetic data alone, significantly outperforming CTGAN (35%) and SMOGN (which fails catastrophically on complex data). Privacy validation through membership inference attacks confirms that the generated data leaks no information about training records (AUC = 0.51, equivalent to random guessing). These results establish diffusion models as a superior approach for generating high-utility, privacy-preserving synthetic tabular data.
 
 ---
 
@@ -30,14 +30,13 @@ Organizations increasingly need to share sensitive tabular data for machine lear
 
 ## LIST OF TABLES
 
-- Table 1: Comparison of Synthetic Data Generation Methods
-- Table 2: Method Comparison Summary
-- Table 3: Experiment Summary
-- Table 4: Replacement Scenario Results
-- Table 5: Augmentation Scenario Results
-- Table 6: Privacy Test Results (Membership Inference Attack)
+- Table 1: Method Comparison Summary
+- Table 2: Experiment Summary
+- Table 3: Replacement Scenario Results
+- Table 4: Augmentation Scenario Results
+- Table 5: Privacy Test Results (Membership Inference Attack)
+- Table 6: Why TabDDPM-style Succeeded
 - Table 7: Comprehensive Validation Results
-- Table 8: Why TabDDPM-style Succeeded
 
 ---
 
@@ -45,9 +44,10 @@ Organizations increasingly need to share sensitive tabular data for machine lear
 
 - Figure 1: Diffusion Process for Tabular Data
 - Figure 2: Hybrid Diffusion Architecture
-- Figure 3: Training Loss Curves
-- Figure 4: Method Comparison Chart
-- Figure 5: Privacy-Utility Tradeoff
+- Figure 3: Replacement Scenario Comparison
+- Figure 4: Augmentation Scenario Comparison
+- Figure 5: Privacy Test Results
+- Figure 6: Key Results Summary
 
 ---
 
@@ -129,6 +129,9 @@ A neural network learns to reverse this process—given a noisy image, predict w
 - Categories become uncertain: [Employed=60% Yes, 40% No]
 - After full corruption: pure random noise
 - The model learns to reconstruct the original record from noise
+
+![Figure 1: Diffusion Process for Tabular Data](figures/fig6_diffusion_process.png)
+*Figure 1: The forward process gradually adds noise until data becomes pure noise. The reverse process learns to denoise, generating new samples.*
 
 ### 2.2 Why Diffusion Models for Tabular Data?
 
@@ -246,7 +249,7 @@ TabSyn's latent-space approach provides the most benefit on large, high-dimensio
 
 | Dataset | Samples | Features | Latent Space Benefit |
 |---------|---------|----------|---------------------|
-| Manufacturing | 18,000 | 2 | Low (already low-dimensional) |
+| Manufacturing | 17,942 | 2 | Low (already low-dimensional) |
 | Ozel Rich | 2,670 | 29 | Moderate |
 | ImageNet (TabSyn paper) | 1.2M+ | 1000+ | High |
 
@@ -381,6 +384,9 @@ We use an MLP denoiser with:
 - Hidden layers: 3 layers of 256 units with ReLU activation and dropout
 - Output: predicted clean data (numerical values + categorical logits)
 
+![Figure 2: Hybrid Diffusion Architecture](figures/fig7_architecture.png)
+*Figure 2: The denoiser takes noisy data and timestep as input, predicting clean data. MSE loss for numerical columns, KL divergence for categorical.*
+
 ### 4.5 Training Procedure
 
 1. **Data preprocessing**:
@@ -442,6 +448,8 @@ Both datasets come from a Turkish fastener manufacturing company and predict mac
 
 **Why these datasets?** They represent real organizational data where privacy-preserving synthetic generation has practical value—production parameters that cannot be shared with external partners. The two datasets also represent different complexity levels: Manufacturing (simple, 2D) tests basic functionality, while Ozel Rich (complex, 29D) tests handling of mixed-type, high-dimensional data.
 
+**Data split:** 80% training / 20% test, with random shuffling. The same test set is used to evaluate all methods for fair comparison.
+
 #### 5.1.2 Models Tested
 
 | Model | Description | Implementation |
@@ -470,7 +478,7 @@ Training times measured on RTX 4070 Ti Super. TabDDPM generation is slower due t
 
 ### 5.2 Experiment Summary
 
-**Table 3: All Experiments Overview**
+**Table 2: All Experiments Overview**
 
 | Exp | Dataset | Purpose | Key Finding |
 |-----|---------|---------|-------------|
@@ -486,7 +494,7 @@ Training times measured on RTX 4070 Ti Super. TabDDPM generation is slower due t
 
 #### 5.3.1 Replacement Scenario (Synthetic Data Only)
 
-**Table 4: Replacement Scenario Results**
+**Table 3: Replacement Scenario Results**
 
 | Method | R² | % of Baseline | Status |
 |--------|-----|---------------|--------|
@@ -503,9 +511,12 @@ Key findings:
 
 *Note: The 0.5628 R² is from a single representative run. Validation across 5 independent runs confirms consistency: R² = 0.54 ± 0.02 (Section 5.6), demonstrating low variance in synthetic data quality.*
 
+![Figure 3: Replacement Scenario Comparison](figures/fig1_replacement_comparison.png)
+*Figure 3: TabDDPM achieves 87% of baseline performance, far exceeding CTGAN (35%) and simple diffusion (27%). SMOGN fails completely.*
+
 #### 5.3.2 Augmentation Scenario (Original + Synthetic)
 
-**Table 5: Augmentation Scenario Results**
+**Table 4: Augmentation Scenario Results**
 
 | Method | R² | % of Baseline |
 |--------|-----|---------------|
@@ -517,9 +528,12 @@ Key findings:
 
 For augmentation, all methods except SMOGN maintain baseline performance. TabDDPM-style achieves the best result at 99.1%.
 
+![Figure 4: Augmentation Scenario Comparison](figures/fig2_augmentation_comparison.png)
+*Figure 4: All methods except SMOGN maintain baseline performance when combining real and synthetic data.*
+
 ### 5.4 Privacy Evaluation
 
-**Table 6: Privacy Test Results**
+**Table 5: Privacy Test Results**
 
 | Method | Attack AUC | TPR@1%FPR | Status |
 |--------|------------|-----------|--------|
@@ -529,9 +543,12 @@ For augmentation, all methods except SMOGN maintain baseline performance. TabDDP
 
 All methods pass privacy validation with AUC ≈ 0.5 (random guessing). TabDDPM-style is slightly more private while achieving much higher utility.
 
+![Figure 5: Privacy Test Results](figures/fig8_privacy_comparison.png)
+*Figure 5: All methods have AUC close to 0.5 (random guessing), indicating no privacy leakage. TabDDPM is the most private.*
+
 ### 5.5 Why TabDDPM-style Succeeded
 
-**Table 8: Key Success Factors**
+**Table 6: Key Success Factors**
 
 The improvement from simple diffusion (26.5%) to TabDDPM-style (87.3%) comes from four key changes:
 
@@ -608,6 +625,9 @@ This project demonstrated that diffusion models, specifically TabDDPM-style impl
 | All diffusion variants are privacy-safe | MIA AUC ≈ 0.51 |
 | SMOGN fails on complex tabular data | Negative R² on mixed-type datasets |
 | TabDDPM improvements are essential | 3.3x better than simple diffusion |
+
+![Figure 6: Key Results Summary](figures/fig9_key_results_summary.png)
+*Figure 6: Three key numbers: 87% utility retention, 0.51 privacy AUC (no leak), 3.3x improvement over simple diffusion.*
 
 ### 6.3 Limitations
 
