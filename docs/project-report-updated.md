@@ -116,12 +116,12 @@ This project aims to:
 This project did not begin with privacy as the primary focus. Understanding our research journey provides important context for interpreting the results.
 
 **Original Problem:**
-We were trying to build a predictive model for manufacturing duration, but initial results were disappointing. The belief was that our dataset was too small or too noisy to train a good model. We turned to data augmentation as a potential solution—if we could generate more synthetic training samples, perhaps the model would improve.
+We were trying to build a predictive model for manufacturing duration, but initial results were disappointing. The belief was that our dataset was too small or too noisy to train a good model. We turned to data augmentation as a potential solution: if we could generate more synthetic training samples, perhaps the model would improve.
 
 **What We Discovered:**
 Two surprising findings emerged:
 
-1. **The baseline was actually achievable.** Once we properly preprocessed the data and selected appropriate features, we achieved R² = 0.65—a reasonable baseline. The original "bad model" problem was not inherent to the dataset.
+1. **The baseline was actually achievable.** Once we properly preprocessed the data and selected appropriate features, we achieved R² = 0.65, a reasonable baseline. The original "bad model" problem was not inherent to the dataset.
 
 2. **Augmentation didn't improve accuracy, but revealed a quality difference.** While testing augmentation methods:
 
@@ -130,7 +130,7 @@ Two surprising findings emerged:
 | SMOGN     | Models trained on SMOGN-augmented data sometimes **completely failed** (R² went negative) |
 | Diffusion | Models trained on diffusion-augmented data **maintained performance**                     |
 
-This wasn't about improving accuracy—it was about **data quality**.
+This wasn't about improving accuracy; it was about **data quality**.
 
 **The Pivot:**
 With augmentation no longer necessary for our original goal, we recognized a different opportunity: if diffusion can generate high-quality synthetic data, it could address privacy concerns about sharing proprietary data.
