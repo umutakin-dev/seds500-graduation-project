@@ -19,7 +19,7 @@ import torch
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from sklearn.preprocessing import QuantileTransformer, LabelEncoder
+from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 from sklearn.model_selection import train_test_split
 
 
@@ -214,21 +214,15 @@ def prepare_numeric_data(df, target_col="kar_marji", test_size=0.2):
         X, y, test_size=test_size, random_state=42
     )
 
-    # Scale features
-    scaler = QuantileTransformer(output_distribution="normal", random_state=42)
+    # Scale features with MinMax to [-1, 1] (linear, perfectly invertible)
+    scaler = MinMaxScaler(feature_range=(-1, 1))
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    # Clip to [-3, 3] and normalize to [-1, 1]
-    X_train_scaled = np.clip(X_train_scaled, -3, 3) / 3
-    X_test_scaled = np.clip(X_test_scaled, -3, 3) / 3
-
-    # Scale target too
-    target_scaler = QuantileTransformer(output_distribution="normal", random_state=42)
+    # Scale target with MinMax to [-1, 1]
+    target_scaler = MinMaxScaler(feature_range=(-1, 1))
     y_train_scaled = target_scaler.fit_transform(y_train.reshape(-1, 1)).flatten()
     y_test_scaled = target_scaler.transform(y_test.reshape(-1, 1)).flatten()
-    y_train_scaled = np.clip(y_train_scaled, -3, 3) / 3
-    y_test_scaled = np.clip(y_test_scaled, -3, 3) / 3
 
     # Combine features and target for diffusion training
     X_train_full = np.column_stack([X_train_scaled, y_train_scaled])
@@ -367,6 +361,20 @@ def prepare_full_data(df, target_col="teklif_miktari", test_size=0.2, min_catego
 
     X_cat = np.column_stack(X_cat) if X_cat else np.zeros((len(df_valid), 0), dtype=np.int64)
 
+    # Remove categorical features with cardinality=1 (constants - add no information)
+    non_constant_mask = [card > 1 for card in cat_cardinalities]
+    if not all(non_constant_mask):
+        removed_cols = [col for col, keep in zip(valid_cat_cols, non_constant_mask) if not keep]
+        print(f"\nRemoving {len(removed_cols)} constant categorical features: {removed_cols}")
+
+        valid_cat_cols = [col for col, keep in zip(valid_cat_cols, non_constant_mask) if keep]
+        cat_cardinalities = [card for card, keep in zip(cat_cardinalities, non_constant_mask) if keep]
+        label_encoders = {k: v for k, v in label_encoders.items() if k in valid_cat_cols}
+
+        # Filter X_cat columns
+        keep_indices = [i for i, keep in enumerate(non_constant_mask) if keep]
+        X_cat = X_cat[:, keep_indices]
+
     print(f"\nFinal columns:")
     print(f"  Numeric: {len(valid_num_cols)}")
     print(f"  Categorical: {len(valid_cat_cols)}")
@@ -380,19 +388,32 @@ def prepare_full_data(df, target_col="teklif_miktari", test_size=0.2, min_catego
     X_cat_train, X_cat_test = X_cat[train_idx], X_cat[test_idx]
     y_train, y_test = y[train_idx], y[test_idx]
 
-    # Scale numerical features
-    scaler = QuantileTransformer(output_distribution="normal", random_state=42)
+    # Clip outliers to 1st-99th percentile before scaling
+    # This prevents extreme outliers from compressing most data to the boundary
+    print("\nClipping outliers to 1st-99th percentile...")
+    clip_bounds = {}
+    for i in range(X_num_train.shape[1]):
+        p1, p99 = np.percentile(X_num_train[:, i], [1, 99])
+        clip_bounds[i] = (p1, p99)
+        X_num_train[:, i] = np.clip(X_num_train[:, i], p1, p99)
+        X_num_test[:, i] = np.clip(X_num_test[:, i], p1, p99)
+        print(f"  {valid_num_cols[i][:30]:<30}: [{p1:.2f}, {p99:.2f}]")
+
+    # Clip target outliers
+    y_p1, y_p99 = np.percentile(y_train, [1, 99])
+    print(f"  {'TARGET':<30}: [{y_p1:.2f}, {y_p99:.2f}]")
+    y_train = np.clip(y_train, y_p1, y_p99)
+    y_test = np.clip(y_test, y_p1, y_p99)
+
+    # Scale numerical features with MinMax to [-1, 1] (linear, perfectly invertible)
+    scaler = MinMaxScaler(feature_range=(-1, 1))
     X_num_train_scaled = scaler.fit_transform(X_num_train)
     X_num_test_scaled = scaler.transform(X_num_test)
-    X_num_train_scaled = np.clip(X_num_train_scaled, -3, 3) / 3
-    X_num_test_scaled = np.clip(X_num_test_scaled, -3, 3) / 3
 
-    # Scale target (treat as additional numeric feature)
-    target_scaler = QuantileTransformer(output_distribution="normal", random_state=42)
+    # Scale target with MinMax to [-1, 1]
+    target_scaler = MinMaxScaler(feature_range=(-1, 1))
     y_train_scaled = target_scaler.fit_transform(y_train.reshape(-1, 1)).flatten()
     y_test_scaled = target_scaler.transform(y_test.reshape(-1, 1)).flatten()
-    y_train_scaled = np.clip(y_train_scaled, -3, 3) / 3
-    y_test_scaled = np.clip(y_test_scaled, -3, 3) / 3
 
     # Include target as last numerical feature
     X_num_train_scaled = np.column_stack([X_num_train_scaled, y_train_scaled])
