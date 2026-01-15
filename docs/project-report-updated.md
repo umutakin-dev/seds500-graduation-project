@@ -12,7 +12,7 @@
 
 ## ABSTRACT
 
-Organizations increasingly need to share sensitive tabular data for machine learning while protecting individual privacy. This project investigates diffusion models as a privacy-preserving approach for generating synthetic tabular data. We implement and evaluate TabDDPM-style diffusion with hybrid Gaussian-Multinomial noise handling, comparing it against CTGAN and SMOGN baselines. Our experiments on organizational datasets (sales quotation and manufacturing data from a fastener company) demonstrate that TabDDPM-style diffusion achieves 87% of baseline model performance when training on synthetic data alone, significantly outperforming CTGAN (35%) and SMOGN (which fails catastrophically on complex data). Privacy validation through membership inference attacks confirms that the generated data leaks no information about training records (AUC = 0.51, equivalent to random guessing). These results establish diffusion models as a superior approach for generating high-utility, privacy-preserving synthetic tabular data.
+Organizations increasingly need to share sensitive tabular data for machine learning while protecting individual privacy. This project investigates diffusion models as a privacy-preserving approach for generating synthetic tabular data. We implement and evaluate TabDDPM-style diffusion with hybrid Gaussian-Multinomial noise handling, comparing it against CTGAN and SMOGN baselines. Our experiments on organizational datasets (sales quotation and manufacturing data from a fastener company) demonstrate that TabDDPM-style diffusion achieves 87-98% of baseline model performance when training on synthetic data alone, significantly outperforming CTGAN (35%) and SMOGN (which fails catastrophically on complex data). On the Production dataset (5,370 samples, 117 features), TabDDPM achieves 98.4% of baseline, demonstrating strong generalization to complex real-world data. Privacy validation through membership inference attacks confirms that the generated data leaks no information about training records (AUC = 0.51, equivalent to random guessing). These results establish diffusion models as a superior approach for generating high-utility, privacy-preserving synthetic tabular data.
 
 ---
 
@@ -103,13 +103,14 @@ This project aims to:
 
 ### 1.5 Summary: Where We Started, Where We Arrived
 
-| Aspect               | Starting Point                                    | Final Result                       |
-| -------------------- | ------------------------------------------------- | ---------------------------------- |
-| **Problem**          | Need to share data without revealing real records | Solved with synthetic generation   |
-| **Initial approach** | Simple diffusion model                            | Only 26.5% of baseline performance |
-| **Improvement**      | TabDDPM-style techniques                          | 87.3% of baseline performance      |
-| **Privacy**          | Unknown if safe                                   | Validated: AUC=0.51 (no leak)      |
-| **vs Alternatives**  | CTGAN, SMOGN untested                             | TabDDPM beats both significantly   |
+| Aspect               | Starting Point                                    | Final Result                              |
+| -------------------- | ------------------------------------------------- | ----------------------------------------- |
+| **Problem**          | Need to share data without revealing real records | Solved with synthetic generation          |
+| **Initial approach** | Simple diffusion model                            | Only 26.5% of baseline performance        |
+| **Improvement**      | TabDDPM-style techniques                          | 87-98% of baseline performance            |
+| **Privacy**          | Unknown if safe                                   | Validated: AUC=0.51 (no leak)             |
+| **vs Alternatives**  | CTGAN, SMOGN untested                             | TabDDPM beats both significantly          |
+| **Generalization**   | Single dataset tested                             | Validated on 2 datasets (Ozel, Production)|
 
 ### 1.6 Research Journey: How This Project Evolved
 
@@ -543,14 +544,15 @@ Training times measured on RTX 4070 Ti Super. TabDDPM generation is slower due t
 
 **Table 2: All Experiments Overview**
 
-| Exp     | Dataset       | Purpose                | Key Finding                              |
-| ------- | ------------- | ---------------------- | ---------------------------------------- |
-| 008     | Production    | Hybrid diffusion vs SMOGN | Diffusion beats SMOGN on all models   |
-| 012     | Ozel simple   | 5-feature test         | Methods comparable                       |
-| 013     | Ozel rich     | 29-feature test        | SMOGN catastrophic failure               |
-| 016     | Ozel rich     | Privacy validation     | Both methods safe                        |
-| 017     | Ozel rich     | 3-way comparison       | CTGAN > Simple Diffusion for replacement |
-| **018** | **Ozel rich** | **TabDDPM-style**      | **Breakthrough: 87% baseline**           |
+| Exp     | Dataset        | Purpose                   | Key Finding                              |
+| ------- | -------------- | ------------------------- | ---------------------------------------- |
+| 008     | Production     | Hybrid diffusion vs SMOGN | Diffusion beats SMOGN on all models      |
+| 012     | Ozel simple    | 5-feature test            | Methods comparable                       |
+| 013     | Ozel rich      | 29-feature test           | SMOGN catastrophic failure               |
+| 016     | Ozel rich      | Privacy validation        | Both methods safe                        |
+| 017     | Ozel rich      | 3-way comparison          | CTGAN > Simple Diffusion for replacement |
+| **018** | **Ozel rich**  | **TabDDPM-style**         | **Breakthrough: 87% baseline**           |
+| **019** | **Production** | **TabDDPM on Production** | **98.4% baseline (best result)**         |
 
 ### 5.3 Main Results
 
@@ -594,6 +596,29 @@ For augmentation, all methods except SMOGN maintain baseline performance. TabDDP
 ![Figure 4: Augmentation Scenario Comparison](figures/fig2_augmentation_comparison.png)
 _Figure 4: All methods except SMOGN maintain baseline performance when combining real and synthetic data._
 
+#### 5.3.3 Production Dataset Results (Experiment 019)
+
+To validate generalization, we applied TabDDPM-style diffusion to the Production dataset (5,370 samples, 117 features after one-hot encoding).
+
+**Table 3b: Production Dataset Results**
+
+| Scenario     | RF R²  | vs Baseline | % of Baseline |
+| ------------ | ------ | ----------- | ------------- |
+| Baseline     | 0.9940 | -           | 100%          |
+| Augmentation | 0.9936 | -0.0004     | **100.0%**    |
+| Replacement  | 0.9785 | -0.0155     | **98.4%**     |
+
+**Comparison across datasets:**
+
+| Dataset    | Baseline R² | Replacement % | Augmentation % |
+| ---------- | ----------- | ------------- | -------------- |
+| Ozel Rich  | 0.6451      | 87.3%         | 99.1%          |
+| Production | 0.9940      | **98.4%**     | **100.0%**     |
+
+Production achieves higher percentage of baseline (98.4% vs 87.3%) despite being more complex (7 numerical + 30 categorical features vs 3 numerical + 4 categorical). This demonstrates that TabDDPM-style diffusion generalizes well to larger, more complex datasets.
+
+**Key insight:** The higher baseline R² (0.994 vs 0.645) indicates stronger patterns in the Production data, which may be easier for diffusion to capture. However, the absolute performance (R² = 0.9785 for replacement) is excellent regardless.
+
 ### 5.4 Privacy Evaluation
 
 **Table 5: Privacy Test Results**
@@ -632,7 +657,51 @@ The improvement from simple diffusion (26.5%) to TabDDPM-style (87.3%) comes fro
 
 4. **Posterior computation**: The reverse process should compute p(x\_{t-1}|x_t, x_0) correctly. Our simple version approximated this incorrectly.
 
-### 5.6 Validation Tests
+### 5.6 Data Preprocessing Lessons (Experiment 019)
+
+During Experiment 019, we discovered critical preprocessing requirements for diffusion models:
+
+#### 5.6.1 Scaler Selection
+
+| Scaler               | Invertibility | Diffusion Compatibility |
+| -------------------- | ------------- | ----------------------- |
+| QuantileTransformer  | Broken by clipping | **Incompatible** |
+| MinMaxScaler         | Perfect linear | **Recommended** |
+
+Initial attempts using QuantileTransformer + clipping (a common preprocessing approach) failed catastrophically. Generated target values were 30x off from original values because:
+
+1. QuantileTransformer creates non-linear mapping
+2. Clipping to [-3, 3] truncates distribution tails
+3. Division by 3 normalizes but loses quantile mapping information
+4. Inverse transform cannot recover original values correctly
+
+**Solution:** Use MinMaxScaler(feature_range=(-1, 1)) which provides perfect linear invertibility.
+
+#### 5.6.2 Outlier Handling
+
+Even with MinMaxScaler, extreme outliers can compress most data to boundary values. We observed features with:
+- Mean: 0.86-0.98 (near +1 or -1 boundary)
+- Std: 0.04-0.08 (almost no variance)
+
+**Solution:** Clip outliers to 1st-99th percentile before scaling:
+
+| Feature | Before Clipping (std) | After Clipping (std) |
+| ------- | --------------------- | -------------------- |
+| Target  | 0.08                  | **0.27**             |
+| KAR MARJI | 0.04                | **0.34**             |
+
+This increased variance 3-8x, enabling proper diffusion training.
+
+#### 5.6.3 Model Capacity Scaling
+
+Production required larger model capacity due to higher input dimensionality:
+
+| Dataset   | Input Dims | Hidden Layers   |
+| --------- | ---------- | --------------- |
+| Ozel Rich | 23         | [256, 256, 256] |
+| Production| 112        | [512, 512, 512, 512] |
+
+### 5.7 Validation Tests
 
 **Table 7: Comprehensive Validation**
 
@@ -685,12 +754,14 @@ This project demonstrated that diffusion models, specifically TabDDPM-style impl
 
 ### 6.2 Key Findings
 
-| Finding                                 | Evidence                           |
-| --------------------------------------- | ---------------------------------- |
-| TabDDPM achieves highest utility        | 87% vs 35% (CTGAN) for replacement |
-| All diffusion variants are privacy-safe | MIA AUC ≈ 0.51                     |
-| SMOGN fails on complex tabular data     | Negative R² on mixed-type datasets |
-| TabDDPM improvements are essential      | 3.3x better than simple diffusion  |
+| Finding                                 | Evidence                                |
+| --------------------------------------- | --------------------------------------- |
+| TabDDPM achieves highest utility        | 87-98% vs 35% (CTGAN) for replacement   |
+| Generalizes across datasets             | Ozel Rich: 87%, Production: 98%         |
+| All diffusion variants are privacy-safe | MIA AUC ≈ 0.51                          |
+| SMOGN fails on complex tabular data     | Negative R² on mixed-type datasets      |
+| TabDDPM improvements are essential      | 3.3x better than simple diffusion       |
+| Preprocessing is critical               | MinMaxScaler + outlier clipping required|
 
 ![Figure 6: Key Results Summary](figures/fig9_key_results_summary.png)
 _Figure 6: Three key numbers: 87% utility retention, 0.51 privacy AUC (no leak), 3.3x improvement over simple diffusion._
@@ -793,6 +864,8 @@ Extend the model to generate data conditioned on specific attributes:
 
 ### A.1 Hyperparameters
 
+**Ozel Rich (Experiment 018):**
+
 | Parameter           | Value           |
 | ------------------- | --------------- |
 | Epochs              | 1000            |
@@ -804,6 +877,21 @@ Extend the model to generate data conditioned on specific attributes:
 | Beta schedule       | Cosine          |
 | Optimizer           | AdamW           |
 | Weight decay        | 1e-5            |
+
+**Production (Experiment 019):**
+
+| Parameter           | Value                 |
+| ------------------- | --------------------- |
+| Epochs              | 1000                  |
+| Batch size          | 128                   |
+| Learning rate       | 1e-4                  |
+| Hidden dimensions   | [512, 512, 512, 512]  |
+| Dropout             | 0.1                   |
+| Diffusion timesteps | 1000                  |
+| Beta schedule       | Cosine                |
+| Optimizer           | AdamW                 |
+| Weight decay        | 1e-5                  |
+| Outlier clipping    | 1st-99th percentile   |
 
 ### A.2 Code Availability
 
