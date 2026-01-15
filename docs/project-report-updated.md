@@ -783,7 +783,7 @@ _Figure 6: Three key numbers: 87% utility retention, 0.51 privacy AUC (no leak),
 
 **Practical:**
 
-- Training requires GPU resources (~5 minutes on RTX 4070 Ti)
+- Training requires GPU resources (5-30 minutes on RTX 4070 Ti depending on dataset size)
 - Generation is slower than GAN-based methods (~30 seconds vs ~2 seconds for 2,670 samples)
 
 ### 6.4 Future Work
