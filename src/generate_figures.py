@@ -295,7 +295,7 @@ def fig5_training_convergence():
 
 def fig6_diffusion_process():
     """Diagram showing the diffusion process for tabular data."""
-    fig, ax = plt.subplots(figsize=(14, 6))
+    fig, ax = plt.subplots(figsize=(16, 7))
     ax.set_xlim(0, 14)
     ax.set_ylim(0, 6)
     ax.axis('off')
@@ -303,39 +303,39 @@ def fig6_diffusion_process():
     num_color = '#1f77b4'
     cat_color = '#ff7f0e'
 
-    ax.text(7, 5.5, 'Forward Process: Adding Noise', ha='center', fontsize=14, fontweight='bold')
+    ax.text(7, 5.5, 'Forward Process: Adding Noise', ha='center', fontsize=18, fontweight='bold')
 
     boxes_x = [1, 4, 7, 10, 13]
     labels = ['x₀\n(Clean)', 'x₁', 'x_t', 'x_{T-1}', 'x_T\n(Noise)']
 
     for i, (x, label) in enumerate(zip(boxes_x, labels)):
         color = plt.cm.RdYlBu(1 - i/4)
-        rect = mpatches.FancyBboxPatch((x-0.6, 4), 1.2, 1, boxstyle="round,pad=0.05",
+        rect = mpatches.FancyBboxPatch((x-0.7, 3.9), 1.4, 1.2, boxstyle="round,pad=0.05",
                                         facecolor=color, edgecolor='black', linewidth=2)
         ax.add_patch(rect)
-        ax.text(x, 4.5, label, ha='center', va='center', fontsize=10, fontweight='bold')
+        ax.text(x, 4.5, label, ha='center', va='center', fontsize=14, fontweight='bold')
 
         if i < len(boxes_x) - 1:
-            ax.annotate('', xy=(boxes_x[i+1]-0.7, 4.5), xytext=(x+0.7, 4.5),
+            ax.annotate('', xy=(boxes_x[i+1]-0.8, 4.5), xytext=(x+0.8, 4.5),
                        arrowprops=dict(arrowstyle='->', color='gray', lw=2))
-            ax.text((x + boxes_x[i+1])/2, 4.9, '+noise', ha='center', fontsize=9, color='gray')
+            ax.text((x + boxes_x[i+1])/2, 5.0, '+noise', ha='center', fontsize=12, color='gray', fontweight='bold')
 
-    ax.text(7, 2.5, 'Reverse Process: Denoising (Generation)', ha='center', fontsize=14, fontweight='bold')
+    ax.text(7, 2.5, 'Reverse Process: Denoising (Generation)', ha='center', fontsize=18, fontweight='bold')
 
     for i, (x, label) in enumerate(zip(reversed(boxes_x), reversed(labels))):
         color = plt.cm.RdYlBu(i/4)
-        rect = mpatches.FancyBboxPatch((x-0.6, 1), 1.2, 1, boxstyle="round,pad=0.05",
+        rect = mpatches.FancyBboxPatch((x-0.7, 0.9), 1.4, 1.2, boxstyle="round,pad=0.05",
                                         facecolor=color, edgecolor='black', linewidth=2)
         ax.add_patch(rect)
-        ax.text(x, 1.5, label, ha='center', va='center', fontsize=10, fontweight='bold')
+        ax.text(x, 1.5, label, ha='center', va='center', fontsize=14, fontweight='bold')
 
         if i < len(boxes_x) - 1:
-            ax.annotate('', xy=(boxes_x[-(i+2)]+0.7, 1.5), xytext=(x-0.7, 1.5),
+            ax.annotate('', xy=(boxes_x[-(i+2)]+0.8, 1.5), xytext=(x-0.8, 1.5),
                        arrowprops=dict(arrowstyle='->', color='green', lw=2))
-            ax.text((x + boxes_x[-(i+2)])/2, 1.9, 'denoise', ha='center', fontsize=9, color='green')
+            ax.text((x + boxes_x[-(i+2)])/2, 2.0, 'denoise', ha='center', fontsize=12, color='green', fontweight='bold')
 
-    ax.text(1, 0.3, 'Numerical: Gaussian noise', color=num_color, fontsize=10, fontweight='bold')
-    ax.text(7, 0.3, 'Categorical: Multinomial diffusion', color=cat_color, fontsize=10, fontweight='bold')
+    ax.text(1, 0.2, 'Numerical: Gaussian noise', color=num_color, fontsize=13, fontweight='bold')
+    ax.text(8, 0.2, 'Categorical: Multinomial diffusion', color=cat_color, fontsize=13, fontweight='bold')
 
     plt.tight_layout()
     plt.savefig(OUTPUT_DIR / 'fig6_diffusion_process.png', bbox_inches='tight', facecolor='white')
@@ -345,77 +345,77 @@ def fig6_diffusion_process():
 
 def fig7_architecture():
     """Neural network architecture diagram."""
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(14, 10))
     ax.set_xlim(0, 12)
     ax.set_ylim(0, 10)
     ax.axis('off')
 
-    ax.text(6, 9.5, 'TabDDPM Hybrid Diffusion Architecture', ha='center', fontsize=16, fontweight='bold')
+    ax.text(6, 9.5, 'TabDDPM Hybrid Diffusion Architecture', ha='center', fontsize=20, fontweight='bold')
 
     input_y = 7.5
-    ax.text(1.5, input_y + 0.8, 'Input', ha='center', fontsize=12, fontweight='bold')
+    ax.text(1.5, input_y + 1.0, 'Input', ha='center', fontsize=14, fontweight='bold')
 
-    rect1 = mpatches.FancyBboxPatch((0.5, input_y-0.4), 2, 0.8, boxstyle="round,pad=0.05",
+    rect1 = mpatches.FancyBboxPatch((0.3, input_y-0.5), 2.4, 1.0, boxstyle="round,pad=0.05",
                                      facecolor='#1f77b4', edgecolor='black', alpha=0.7)
     ax.add_patch(rect1)
-    ax.text(1.5, input_y, 'Numerical\n(Gaussian)', ha='center', va='center', fontsize=9, color='white', fontweight='bold')
+    ax.text(1.5, input_y, 'Numerical\n(Gaussian)', ha='center', va='center', fontsize=12, color='white', fontweight='bold')
 
-    rect2 = mpatches.FancyBboxPatch((0.5, input_y-1.6), 2, 0.8, boxstyle="round,pad=0.05",
+    rect2 = mpatches.FancyBboxPatch((0.3, input_y-1.8), 2.4, 1.0, boxstyle="round,pad=0.05",
                                      facecolor='#ff7f0e', edgecolor='black', alpha=0.7)
     ax.add_patch(rect2)
-    ax.text(1.5, input_y-1.2, 'Categorical\n(Log-prob)', ha='center', va='center', fontsize=9, color='white', fontweight='bold')
+    ax.text(1.5, input_y-1.3, 'Categorical\n(Log-prob)', ha='center', va='center', fontsize=12, color='white', fontweight='bold')
 
-    rect3 = mpatches.FancyBboxPatch((0.5, input_y-2.8), 2, 0.8, boxstyle="round,pad=0.05",
+    rect3 = mpatches.FancyBboxPatch((0.3, input_y-3.1), 2.4, 1.0, boxstyle="round,pad=0.05",
                                      facecolor='#2ca02c', edgecolor='black', alpha=0.7)
     ax.add_patch(rect3)
-    ax.text(1.5, input_y-2.4, 'Timestep t\n(Embedding)', ha='center', va='center', fontsize=9, color='white', fontweight='bold')
+    ax.text(1.5, input_y-2.6, 'Timestep t\n(Embedding)', ha='center', va='center', fontsize=12, color='white', fontweight='bold')
 
     concat_x, concat_y = 4, 6.3
-    rect_concat = mpatches.FancyBboxPatch((concat_x-0.5, concat_y-0.4), 1, 0.8, boxstyle="round,pad=0.05",
+    rect_concat = mpatches.FancyBboxPatch((concat_x-0.6, concat_y-0.5), 1.2, 1.0, boxstyle="round,pad=0.05",
                                            facecolor='#9467bd', edgecolor='black')
     ax.add_patch(rect_concat)
-    ax.text(concat_x, concat_y, 'Concat', ha='center', va='center', fontsize=9, color='white', fontweight='bold')
+    ax.text(concat_x, concat_y, 'Concat', ha='center', va='center', fontsize=12, color='white', fontweight='bold')
 
-    for y_offset in [0, -1.2, -2.4]:
-        ax.annotate('', xy=(concat_x-0.5, concat_y), xytext=(2.5, input_y + y_offset),
+    for y_offset in [0, -1.3, -2.6]:
+        ax.annotate('', xy=(concat_x-0.6, concat_y), xytext=(2.7, input_y + y_offset),
                    arrowprops=dict(arrowstyle='->', color='gray', lw=1.5))
 
     mlp_x = 6
     layer_names = ['Linear\n256-512', 'ReLU +\nDropout', 'Linear\n256-512', 'ReLU +\nDropout', 'Linear\nOutput']
     for i, name in enumerate(layer_names):
-        y = 7.5 - i * 1.2
-        rect = mpatches.FancyBboxPatch((mlp_x-0.6, y-0.4), 1.2, 0.8, boxstyle="round,pad=0.05",
+        y = 7.5 - i * 1.3
+        rect = mpatches.FancyBboxPatch((mlp_x-0.7, y-0.5), 1.4, 1.0, boxstyle="round,pad=0.05",
                                         facecolor='#17becf', edgecolor='black')
         ax.add_patch(rect)
-        ax.text(mlp_x, y, name, ha='center', va='center', fontsize=8, fontweight='bold')
+        ax.text(mlp_x, y, name, ha='center', va='center', fontsize=11, fontweight='bold')
 
         if i < len(layer_names) - 1:
-            ax.annotate('', xy=(mlp_x, y-0.5), xytext=(mlp_x, y-0.8),
+            ax.annotate('', xy=(mlp_x, y-0.6), xytext=(mlp_x, y-0.9),
                        arrowprops=dict(arrowstyle='->', color='gray', lw=1.5))
 
-    ax.annotate('', xy=(mlp_x-0.6, 7.5), xytext=(concat_x+0.5, concat_y),
+    ax.annotate('', xy=(mlp_x-0.7, 7.5), xytext=(concat_x+0.6, concat_y),
                arrowprops=dict(arrowstyle='->', color='gray', lw=1.5))
 
     output_x = 9
     output_y = 6.3
 
-    rect_num = mpatches.FancyBboxPatch((output_x-0.5, output_y+0.8), 2, 0.8, boxstyle="round,pad=0.05",
+    rect_num = mpatches.FancyBboxPatch((output_x-0.6, output_y+0.7), 2.2, 1.0, boxstyle="round,pad=0.05",
                                         facecolor='#1f77b4', edgecolor='black', alpha=0.7)
     ax.add_patch(rect_num)
-    ax.text(output_x+0.5, output_y+1.2, 'Predicted x₀\n(Numerical)', ha='center', va='center', fontsize=9, color='white', fontweight='bold')
+    ax.text(output_x+0.5, output_y+1.2, 'Predicted x₀\n(Numerical)', ha='center', va='center', fontsize=12, color='white', fontweight='bold')
 
-    rect_cat = mpatches.FancyBboxPatch((output_x-0.5, output_y-0.8), 2, 0.8, boxstyle="round,pad=0.05",
+    rect_cat = mpatches.FancyBboxPatch((output_x-0.6, output_y-1.0), 2.2, 1.0, boxstyle="round,pad=0.05",
                                         facecolor='#ff7f0e', edgecolor='black', alpha=0.7)
     ax.add_patch(rect_cat)
-    ax.text(output_x+0.5, output_y-0.4, 'Predicted x₀\n(Categorical)', ha='center', va='center', fontsize=9, color='white', fontweight='bold')
+    ax.text(output_x+0.5, output_y-0.5, 'Predicted x₀\n(Categorical)', ha='center', va='center', fontsize=12, color='white', fontweight='bold')
 
-    ax.annotate('', xy=(output_x-0.5, output_y+1.2), xytext=(mlp_x+0.6, 2.7),
+    ax.annotate('', xy=(output_x-0.6, output_y+1.2), xytext=(mlp_x+0.7, 2.3),
                arrowprops=dict(arrowstyle='->', color='gray', lw=1.5))
-    ax.annotate('', xy=(output_x-0.5, output_y-0.4), xytext=(mlp_x+0.6, 2.7),
+    ax.annotate('', xy=(output_x-0.6, output_y-0.5), xytext=(mlp_x+0.7, 2.3),
                arrowprops=dict(arrowstyle='->', color='gray', lw=1.5))
 
-    ax.text(11, output_y+1.2, 'MSE\nLoss', ha='center', va='center', fontsize=9, color='#1f77b4', fontweight='bold')
-    ax.text(11, output_y-0.4, 'KL Div\nLoss', ha='center', va='center', fontsize=9, color='#ff7f0e', fontweight='bold')
+    ax.text(11.2, output_y+1.2, 'MSE\nLoss', ha='center', va='center', fontsize=12, color='#1f77b4', fontweight='bold')
+    ax.text(11.2, output_y-0.5, 'KL Div\nLoss', ha='center', va='center', fontsize=12, color='#ff7f0e', fontweight='bold')
 
     plt.tight_layout()
     plt.savefig(OUTPUT_DIR / 'fig7_architecture.png', bbox_inches='tight', facecolor='white')
@@ -457,9 +457,9 @@ def fig8_privacy_comparison():
 
 def fig9_key_results_summary():
     """Visual summary of key results - updated for both datasets."""
-    fig, ax = plt.subplots(figsize=(14, 9))
+    fig, ax = plt.subplots(figsize=(14, 7))
     ax.set_xlim(0, 14)
-    ax.set_ylim(0, 11)
+    ax.set_ylim(2, 11)
     ax.axis('off')
 
     ax.text(7, 10.3, 'Key Results Summary', ha='center', fontsize=22, fontweight='bold')
@@ -510,12 +510,6 @@ def fig9_key_results_summary():
     ax.text(10.75, 4.5, 'GENERALIZES', ha='center', fontsize=12, fontweight='bold', color='#333333')
     ax.text(10.75, 3.7, '2 datasets', ha='center', fontsize=28, fontweight='bold', color='#333333')
     ax.text(10.75, 3, 'Different domains', ha='center', fontsize=10)
-
-    # Bottom message
-    ax.text(7, 1.5, 'Conclusion: TabDDPM achieves high utility (87-98%) with strong privacy (AUC=0.51)',
-            ha='center', fontsize=13, fontweight='bold')
-    ax.text(7, 0.8, 'Key: MinMaxScaler + Outlier Clipping + Scaled Model Capacity',
-            ha='center', fontsize=11, color='gray')
 
     plt.tight_layout()
     plt.savefig(OUTPUT_DIR / 'fig9_key_results_summary.png', bbox_inches='tight', facecolor='white')
