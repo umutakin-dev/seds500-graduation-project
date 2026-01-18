@@ -1,0 +1,73 @@
+% Section 2: Background
+\chapter{BACKGROUND: WHAT ARE DIFFUSION MODELS?}
+
+\section{Intuitive Explanation}
+
+Diffusion models learn to generate data by learning to \textbf{undo corruption} \cite{ho2020}. The process works in two phases:
+
+\textbf{Forward Process (Adding Noise):}
+Imagine taking a clear photograph and gradually adding static/noise until it becomes pure random noise. This is done in small steps (e.g., 1000 steps).
+
+\textbf{Reverse Process (Removing Noise):}
+A neural network learns to reverse this process; given a noisy image, predict what the slightly less noisy version looks like. By repeating this 1000 times, we can start from pure noise and generate a realistic image.
+
+\textbf{For Tabular Data:}
+
+\begin{itemize}
+    \item A data record [Age=35, Income=50000, Employed=Yes] gets gradually corrupted
+    \item Numbers get noisy: [Age=35$\pm$noise, Income=50000$\pm$noise]
+    \item Categories become uncertain: [Employed=60\% Yes, 40\% No]
+    \item After full corruption: pure random noise
+    \item The model learns to reconstruct the original record from noise
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{fig6_diffusion_process.png}
+    \caption{The forward process gradually adds noise until data becomes pure noise. The reverse process learns to denoise, generating new samples.}
+    \label{fig:diffusion-process}
+\end{figure}
+
+\section{Why Diffusion Models for Tabular Data?}
+
+Diffusion models offer several compelling advantages over alternative approaches for generating synthetic tabular data. Unlike GANs, which require careful balancing between generator and discriminator networks and can suffer from mode collapse (generating only a subset of possible outputs), diffusion models have stable training dynamics with simple loss functions. They learn the entire data distribution rather than just the most common patterns, making them particularly suitable for datasets with rare but important combinations.
+
+The flexibility of diffusion models allows them to handle the mixed numerical and categorical nature of tabular data through hybrid noise processes. Furthermore, the recent success of diffusion models in image generation (achieving state-of-the-art results) has motivated researchers to adapt these techniques for tabular data, with promising results on standard benchmarks.
+
+\begin{table}[H]
+\centering
+\caption{Advantages of Diffusion Models}
+\label{tab:advantages}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Advantage} & \textbf{Explanation} \\
+\midrule
+Stable training & Unlike GANs, diffusion has simple MSE/KL loss, no adversarial instability \\
+Full distribution & Learns entire data distribution, not just modes \\
+Flexible & Can handle mixed numerical/categorical data \\
+High quality & State-of-the-art results in images, now proven for tabular \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Key Terms}
+
+Understanding diffusion models requires familiarity with several key concepts. The timestep parameter controls how much noise has been added to the data, ranging from clean data at $t=0$ to pure noise at $t=T$ (typically 1000). The forward process gradually corrupts data by adding noise, while the reverse process learns to remove this noise step by step. The denoiser is the neural network at the heart of the model, trained to predict clean data from noisy input. For tabular data, we use Gaussian diffusion (adding continuous noise from a normal distribution) for numerical features and multinomial diffusion (corrupting category probabilities toward uniform) for categorical features.
+
+\begin{table}[H]
+\centering
+\caption{Key Terms in Diffusion Models}
+\label{tab:keyterms}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Term} & \textbf{Definition} \\
+\midrule
+Timestep ($t$) & How much noise has been added ($t=0$: clean, $t=1000$: pure noise) \\
+Forward process & The corruption process: gradually add noise \\
+Reverse process & The generation process: gradually remove noise \\
+Denoiser & Neural network that predicts clean data from noisy input \\
+Gaussian diffusion & Uses normal distribution noise (for numerical data) \\
+Multinomial diffusion & Uses categorical probability noise (for categorical data) \\
+\bottomrule
+\end{tabular}
+\end{table}

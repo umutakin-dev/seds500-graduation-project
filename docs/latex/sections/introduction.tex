@@ -1,0 +1,115 @@
+% Section 1: Introduction
+\chapter{INTRODUCTION}
+
+\section{Motivation}
+
+Organizations across industries (healthcare, finance, manufacturing) collect valuable tabular data that could advance machine learning research and enable collaboration. However, sharing raw data poses significant privacy risks. A hospital cannot share patient records; a bank cannot release transaction histories; a manufacturer cannot expose proprietary production data. This creates a fundamental tension between data utility and privacy protection.
+
+Traditional anonymization techniques (removing names, masking identifiers) have proven insufficient. Research has demonstrated that individuals can be re-identified from supposedly anonymized datasets using auxiliary information \cite{sweeney2000, narayanan2008}. Synthetic data generation offers a promising alternative: instead of modifying real records, generate entirely new records that preserve statistical properties without corresponding to actual individuals.
+
+\section{Problem Definition}
+
+The core challenge is generating synthetic tabular data that satisfies two competing objectives:
+
+\begin{enumerate}
+    \item \textbf{High Utility}: Machine learning models trained on synthetic data should perform comparably to models trained on real data.
+    \item \textbf{Strong Privacy}: It should be impossible to determine whether any specific record was used to train the generative model.
+\end{enumerate}
+
+Tabular data presents unique challenges compared to images or text:
+
+\begin{itemize}
+    \item \textbf{Mixed types}: Columns contain both numerical (continuous) and categorical (discrete) values
+    \item \textbf{Complex dependencies}: Features exhibit non-linear relationships
+    \item \textbf{Imbalanced distributions}: Real-world data often has skewed distributions
+\end{itemize}
+
+\section{Research Question}
+
+\textbf{When generating synthetic tabular data for privacy/anonymization purposes, do diffusion models produce more realistic data than traditional methods?}
+
+\section{Goal}
+
+This project aims to:
+
+\begin{enumerate}
+    \item Implement a diffusion-based synthetic tabular data generator using TabDDPM-style techniques
+    \item Evaluate utility through downstream ML task performance
+    \item Validate privacy through membership inference attacks
+    \item Compare against established baselines (CTGAN, SMOGN)
+\end{enumerate}
+
+\section{Summary: Where We Started, Where We Arrived}
+
+Table~\ref{tab:summary} summarizes the evolution of our project from initial exploration to final results. We began with a simple diffusion model that achieved only 26.5\% of baseline performance, then progressively improved through TabDDPM-style techniques to reach 87-98\% of baseline while maintaining strong privacy guarantees.
+
+\begin{table}[H]
+\centering
+\caption{Project Evolution Summary}
+\label{tab:summary}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Aspect} & \textbf{Starting Point} & \textbf{Final Result} \\
+\midrule
+Problem & Need to share data without revealing records & Solved with synthetic generation \\
+Initial approach & Simple diffusion model & Only 26.5\% of baseline \\
+Improvement & TabDDPM-style techniques & 87-98\% of baseline \\
+Privacy & Unknown if safe & Validated: AUC=0.51 (no leak) \\
+vs Alternatives & CTGAN, SMOGN untested & TabDDPM beats both \\
+Generalization & Single dataset tested & Validated on 2 datasets \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Research Journey: How This Project Evolved}
+
+This project did not begin with privacy as the primary focus. Understanding our research journey provides important context for interpreting the results.
+
+\textbf{Original Problem:}
+We were trying to build a predictive model for manufacturing duration, but initial results were disappointing. The belief was that our dataset was too small or too noisy to train a good model. We turned to data augmentation as a potential solution: if we could generate more synthetic training samples, perhaps the model would improve.
+
+\textbf{What We Discovered:}
+Two surprising findings emerged:
+
+\begin{enumerate}
+    \item \textbf{The baseline was actually achievable.} Once we properly preprocessed the data and selected appropriate features, we achieved R\textsuperscript{2} = 0.65, a reasonable baseline. The original ``bad model'' problem was not inherent to the dataset.
+
+    \item \textbf{Augmentation didn't improve accuracy, but revealed a quality difference.} While testing augmentation methods, we observed that models trained on SMOGN-augmented data sometimes completely failed (R\textsuperscript{2} went negative), whereas models trained on diffusion-augmented data maintained performance. This wasn't about improving accuracy; it was about data quality.
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\caption{Augmentation Methods Comparison}
+\label{tab:augmentation}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Method} & \textbf{Observation} \\
+\midrule
+SMOGN & Models sometimes completely failed (R\textsuperscript{2} went negative) \\
+Diffusion & Models maintained performance \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{The Pivot:}
+With augmentation no longer necessary for our original goal, we recognized a different opportunity: if diffusion can generate high-quality synthetic data, it could address privacy concerns about sharing proprietary data.
+
+\begin{table}[H]
+\centering
+\caption{Research Pivot}
+\label{tab:pivot}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Aspect} & \textbf{Original} & \textbf{Revised} \\
+\midrule
+Problem & Can't build a good model & Need to share data without revealing records \\
+Approach & Augmentation to improve accuracy & Synthetic generation for privacy \\
+Question & Can augmentation rescue a bad model? & Does diffusion produce privacy-safe data? \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Why This Pivot Matters:}
+The revised question addresses a real business problem: organizations need to share data for collaboration and ML development, but cannot share real records due to privacy concerns. Our finding that diffusion produces high-quality synthetic data (87\% utility, no privacy leakage) directly solves this problem.
+
+\textit{Sometimes the most interesting findings aren't what you set out to discover.}

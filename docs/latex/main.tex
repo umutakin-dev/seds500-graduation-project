@@ -1,0 +1,60 @@
+% Main document - SEDS500 Project Report
+% Privacy-Preserving Synthetic Tabular Data Generation Using Diffusion Models
+% Author: Umut Ak{\i}n
+% Date: January 2026
+
+\input{preamble}
+
+\begin{document}
+
+% Title Page
+\input{titlepage}
+
+% Report Documentation Page
+\input{docpage}
+
+% Front matter with roman numerals
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+% Abstract
+\input{sections/abstract}
+
+% Table of Contents
+\newpage
+\tableofcontents
+
+% List of Tables
+\newpage
+\listoftables
+
+% List of Figures
+\newpage
+\listoffigures
+
+% List of Abbreviations
+\newpage
+\input{sections/abbreviations}
+
+% Main Content - switch to arabic numerals
+\newpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\input{sections/introduction}
+\input{sections/background}
+\input{sections/related-work}
+\input{sections/approach}
+\input{sections/results}
+\input{sections/conclusion}
+
+% References
+\newpage
+\printbibliography[title={REFERENCES}]
+
+% Appendix
+\newpage
+\appendix
+\input{sections/appendix}
+
+\end{document}

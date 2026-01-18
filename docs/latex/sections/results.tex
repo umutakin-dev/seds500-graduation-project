@@ -1,0 +1,400 @@
+% Section 5: Results and Discussion
+\chapter{RESULTS AND DISCUSSION}
+
+\section{Experimental Setup}
+
+\subsection{Datasets}
+
+Both datasets come from a Turkish fastener manufacturing company, representing different business processes within the same organization. As these are proprietary organizational datasets, they are not publicly available. They were used with permission for this research project.
+
+\begin{table}[H]
+\centering
+\caption{Dataset Overview}
+\label{tab:datasets}
+\begin{tabular}{@{}llrp{4cm}p{2.5cm}r@{}}
+\toprule
+\textbf{Dataset} & \textbf{Domain} & \textbf{Samples} & \textbf{Features} & \textbf{Target} & \textbf{Baseline R²} \\
+\midrule
+Production & Sales quotation & 5,370 & 7 num + 35 cat (117 one-hot) & Quote amount (EUR) & 0.92 \\
+Ozel Rich & Custom fastener mfg & 2,670 & 2 num + 4 cat (29 one-hot) & Machine time (min/100k) & 0.65 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Why these datasets?} They represent real organizational data where privacy-preserving synthetic generation has practical value: quotation data and production parameters that cannot be shared with external partners. The two datasets also demonstrate generalization across different prediction tasks:
+
+\begin{itemize}
+    \item \textbf{Production}: Sales/quotation process -- predicts pricing from product specifications
+    \item \textbf{Ozel Rich}: Manufacturing process -- predicts machine time from product dimensions
+\end{itemize}
+
+Using different targets (quote amount vs machine time) validates that diffusion models generalize across business use cases, not just one specific prediction task. Both datasets contain mixed types (numerical and categorical features), enabling fair comparison.
+
+\textbf{Data split:} 80\% training / 20\% test, with random shuffling. The same test set is used to evaluate all methods for fair comparison.
+
+\subsection{Models Tested}
+
+\begin{table}[H]
+\centering
+\caption{Models Compared}
+\label{tab:models}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Model} & \textbf{Description} & \textbf{Implementation} \\
+\midrule
+SMOGN & Interpolation-based & smogn library \\
+CTGAN & GAN-based & sdv library \\
+Simple Diffusion (V6) & Our basic diffusion & Custom PyTorch \\
+TabDDPM-style (Exp 018) & Our improved diffusion & Custom PyTorch \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Implementation Details}
+
+\begin{itemize}
+    \item Framework: PyTorch
+    \item Hardware: NVIDIA RTX 4070 Ti Super (16GB VRAM)
+    \item Training: 1000 epochs, batch size 128, learning rate $10^{-4}$
+    \item Diffusion: 1000 timesteps, cosine beta schedule
+\end{itemize}
+
+\subsection{Computational Cost}
+
+\begin{table}[H]
+\centering
+\caption{Computational Cost Comparison}
+\label{tab:compute}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Method} & \textbf{Training Time} & \textbf{Generation Time (2,670 samples)} \\
+\midrule
+SMOGN & $<$ 1 minute & $<$ 1 second \\
+CTGAN & $\sim$10 minutes & $\sim$2 seconds \\
+TabDDPM-style & $\sim$5 minutes & $\sim$30 seconds \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Training times measured on RTX 4070 Ti Super. TabDDPM generation is slower due to the iterative denoising process (1000 steps), but remains practical for batch generation.
+
+\section{Experiment Summary}
+
+We conducted a series of experiments to systematically evaluate diffusion models against traditional methods. Experiments 008 through 013 established baseline comparisons, revealing that SMOGN fails catastrophically on complex mixed-type data. Experiment 016 validated privacy through membership inference attacks. Experiment 017 added CTGAN to the comparison, showing that our simple diffusion underperformed CTGAN on replacement. The breakthrough came in Experiment 018, where implementing TabDDPM-style techniques (log-space operations, KL divergence loss) achieved 87\% of baseline. Finally, Experiment 019 demonstrated generalization to the larger Production dataset, achieving 98.4\% of baseline.
+
+\begin{table}[H]
+\centering
+\caption{All Experiments Overview}
+\label{tab:experiments}
+\begin{tabularx}{\textwidth}{@{}llXX@{}}
+\toprule
+\textbf{Exp} & \textbf{Dataset} & \textbf{Purpose} & \textbf{Key Finding} \\
+\midrule
+008 & Production & Hybrid diffusion vs SMOGN & Diffusion beats SMOGN on all models \\
+012 & Ozel simple & 5-feature test & Methods comparable \\
+013 & Ozel rich & 29-feature test & SMOGN catastrophic failure \\
+016 & Ozel rich & Privacy validation & Both methods safe \\
+017 & Ozel rich & 3-way comparison & CTGAN $>$ Simple Diffusion for replacement \\
+\textbf{018} & \textbf{Ozel rich} & \textbf{TabDDPM-style} & \textbf{Breakthrough: 87\% baseline} \\
+\textbf{019} & \textbf{Production} & \textbf{TabDDPM on Production} & \textbf{98.4\% baseline (best result)} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Main Results}
+
+\subsection{Replacement Scenario (Synthetic Data Only)}
+
+The replacement scenario is the most challenging test: training a model entirely on synthetic data and evaluating on real test data. This measures how well the synthetic data captures the true data distribution. Table~\ref{tab:replacement} shows that TabDDPM-style diffusion dramatically outperforms all other methods.
+
+\begin{table}[H]
+\centering
+\caption{Replacement Scenario Results}
+\label{tab:replacement}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Method} & \textbf{R²} & \textbf{\% of Baseline} & \textbf{Status} \\
+\midrule
+Baseline (Real Data) & 0.6451 & 100\% & -- \\
+SMOGN & -0.1354 & N/A & FAILED \\
+CTGAN & 0.2292 & 35.5\% & Working \\
+Simple Diffusion (V6) & 0.1712 & 26.5\% & Working \\
+\textbf{TabDDPM-style (Exp 018)} & \textbf{0.5628} & \textbf{87.3\%} & \textbf{Best} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Key findings:
+
+\begin{itemize}
+    \item \textbf{SMOGN fails catastrophically} on complex data with mixed types
+    \item \textbf{CTGAN achieves 35.5\%} of baseline, acceptable for some use cases
+    \item \textbf{TabDDPM-style achieves 87.3\%} of baseline, a breakthrough result
+\end{itemize}
+
+\textit{Note: The 0.5628 R² is from a single representative run. Validation across 5 independent runs confirms consistency: R² = 0.54 $\pm$ 0.02 (Section 5.6), demonstrating low variance in synthetic data quality.}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{fig1_replacement_comparison.png}
+    \caption{TabDDPM achieves 87\% of baseline performance, far exceeding CTGAN (35\%) and simple diffusion (27\%). SMOGN fails completely.}
+    \label{fig:replacement}
+\end{figure}
+
+\subsection{Augmentation Scenario (Original + Synthetic)}
+
+The augmentation scenario combines real training data with synthetic data. This tests whether synthetic data can add value without degrading performance.
+
+\begin{table}[H]
+\centering
+\caption{Augmentation Scenario Results}
+\label{tab:augmentation}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Method} & \textbf{R²} & \textbf{\% of Baseline} \\
+\midrule
+Baseline & 0.6451 & 100\% \\
+SMOGN & -0.1354 & N/A (harmful) \\
+CTGAN & 0.6310 & 97.8\% \\
+Simple Diffusion & 0.6355 & 98.5\% \\
+\textbf{TabDDPM-style} & \textbf{0.6395} & \textbf{99.1\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For augmentation, all methods except SMOGN maintain baseline performance. TabDDPM-style achieves the best result at 99.1\%.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{fig2_augmentation_comparison.png}
+    \caption{All methods except SMOGN maintain baseline performance when combining real and synthetic data.}
+    \label{fig:augmentation}
+\end{figure}
+
+\subsection{Production Dataset Results (Experiment 019)}
+
+To validate generalization, we applied TabDDPM-style diffusion to the Production dataset (5,370 samples, 117 features after one-hot encoding).
+
+\begin{table}[H]
+\centering
+\caption{Production Dataset Results}
+\label{tab:production}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Scenario} & \textbf{RF R²} & \textbf{vs Baseline} & \textbf{\% of Baseline} \\
+\midrule
+Baseline & 0.9940 & -- & 100\% \\
+Augmentation & 0.9936 & -0.0004 & \textbf{100.0\%} \\
+Replacement & 0.9785 & -0.0155 & \textbf{98.4\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Comparison across datasets:}
+
+\begin{table}[H]
+\centering
+\caption{Cross-Dataset Comparison}
+\label{tab:cross-dataset}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Dataset} & \textbf{Baseline R²} & \textbf{Replacement \%} & \textbf{Augmentation \%} \\
+\midrule
+Ozel Rich & 0.6451 & 87.3\% & 99.1\% \\
+Production & 0.9940 & \textbf{98.4\%} & \textbf{100.0\%} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Production achieves higher percentage of baseline (98.4\% vs 87.3\%) despite being more complex (7 numerical + 30 categorical features vs 3 numerical + 4 categorical). This demonstrates that TabDDPM-style diffusion generalizes well to larger, more complex datasets.
+
+\textbf{Key insight:} The higher baseline R² (0.994 vs 0.645) indicates stronger patterns in the Production data, which may be easier for diffusion to capture. However, the absolute performance (R² = 0.9785 for replacement) is excellent regardless.
+
+\section{Privacy Evaluation}
+
+Privacy is evaluated through membership inference attacks, where an attacker attempts to determine whether a specific record was used in training. An attack AUC close to 0.5 indicates the attacker performs no better than random guessing, meaning no privacy leakage.
+
+\begin{table}[H]
+\centering
+\caption{Privacy Test Results}
+\label{tab:privacy}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Method} & \textbf{Attack AUC} & \textbf{TPR@1\%FPR} & \textbf{Status} \\
+\midrule
+Simple Diffusion & 0.5116 & 0.02 & SAFE \\
+SMOGN & 0.5253 & 0.03 & SAFE \\
+\textbf{TabDDPM-style} & \textbf{0.5103} & \textbf{0.01} & \textbf{EXCELLENT} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All methods pass privacy validation with AUC $\approx$ 0.5 (random guessing). TabDDPM-style is slightly more private while achieving much higher utility.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{fig8_privacy_comparison.png}
+    \caption{All methods have AUC close to 0.5 (random guessing), indicating no privacy leakage. TabDDPM is the most private.}
+    \label{fig:privacy}
+\end{figure}
+
+\section{Why TabDDPM-style Succeeded}
+
+The improvement from simple diffusion (26.5\%) to TabDDPM-style (87.3\%) comes from four key changes, each addressing a specific technical challenge in categorical diffusion.
+
+\begin{table}[H]
+\centering
+\caption{Key Success Factors}
+\label{tab:success}
+\begin{tabularx}{\textwidth}{@{}lXX@{}}
+\toprule
+\textbf{Component} & \textbf{Problem It Solves} & \textbf{Impact} \\
+\midrule
+Log-space operations & Probability underflow & Prevents NaN/Inf in training \\
+KL divergence loss & Wrong loss for categories & Learns proper distributions \\
+Gumbel-softmax sampling & Argmax is non-differentiable & Enables gradient flow \\
+Posterior computation & Incorrect reverse process & Faithful reconstruction \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Why these matter:}
+
+\begin{enumerate}
+    \item \textbf{Log-space operations}: When multiplying many small probabilities (e.g., $0.01 \times 0.01 \times ...$), numbers become too small for computers. Log-space keeps values manageable.
+
+    \item \textbf{KL divergence loss}: MSE loss treats categorical probabilities as independent numbers. KL divergence respects that they must sum to 1 and measures distribution similarity.
+
+    \item \textbf{Gumbel-softmax}: During generation, we need to sample categories. Argmax (pick highest probability) can't be used in training because it has no gradient. Gumbel-softmax is a differentiable approximation.
+
+    \item \textbf{Posterior computation}: The reverse process should compute $p(x_{t-1}|x_t, x_0)$ correctly. Our simple version approximated this incorrectly.
+\end{enumerate}
+
+\section{Data Preprocessing Lessons (Experiment 019)}
+
+During Experiment 019, we discovered critical preprocessing requirements for diffusion models:
+
+\subsection{Scaler Selection}
+
+\begin{table}[H]
+\centering
+\caption{Scaler Comparison}
+\label{tab:scaler}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Scaler} & \textbf{Invertibility} & \textbf{Diffusion Compatibility} \\
+\midrule
+QuantileTransformer & Broken by clipping & \textbf{Incompatible} \\
+MinMaxScaler & Perfect linear & \textbf{Recommended} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Initial attempts using QuantileTransformer + clipping (a common preprocessing approach) failed catastrophically. Generated target values were 30x off from original values because:
+
+\begin{enumerate}
+    \item QuantileTransformer creates non-linear mapping
+    \item Clipping to $[-3, 3]$ truncates distribution tails
+    \item Division by 3 normalizes but loses quantile mapping information
+    \item Inverse transform cannot recover original values correctly
+\end{enumerate}
+
+\textbf{Solution:} Use MinMaxScaler(feature\_range=(-1, 1)) which provides perfect linear invertibility.
+
+\subsection{Outlier Handling}
+
+Even with MinMaxScaler, extreme outliers can compress most data to boundary values. We observed features with:
+\begin{itemize}
+    \item Mean: 0.86--0.98 (near +1 or -1 boundary)
+    \item Std: 0.04--0.08 (almost no variance)
+\end{itemize}
+
+\textbf{Solution:} Clip outliers to 1st--99th percentile before scaling:
+
+\begin{table}[H]
+\centering
+\caption{Effect of Outlier Clipping}
+\label{tab:clipping}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Feature} & \textbf{Before Clipping (std)} & \textbf{After Clipping (std)} \\
+\midrule
+Target & 0.08 & \textbf{0.27} \\
+KAR MARJI & 0.04 & \textbf{0.34} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This increased variance 3--8x, enabling proper diffusion training.
+
+\subsection{Model Capacity Scaling}
+
+Production required larger model capacity due to higher input dimensionality:
+
+\begin{table}[H]
+\centering
+\caption{Model Capacity by Dataset}
+\label{tab:capacity}
+\begin{tabular}{@{}lrl@{}}
+\toprule
+\textbf{Dataset} & \textbf{Input Dims} & \textbf{Hidden Layers} \\
+\midrule
+Ozel Rich & 23 & [256, 256, 256] \\
+Production & 112 & [512, 512, 512, 512] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Validation Tests}
+
+To ensure the robustness of our results, we conducted several validation tests. Multiple independent runs showed consistent performance with low variance. Categorical feature distributions matched the original data closely (Chi-squared test p $>$ 0.97). Feature correlations were preserved within acceptable tolerances. Bidirectional training experiments confirmed the model works in both directions.
+
+\begin{table}[H]
+\centering
+\caption{Comprehensive Validation}
+\label{tab:validation}
+\begin{tabular}{@{}llr@{}}
+\toprule
+\textbf{Test} & \textbf{Result} & \textbf{Status} \\
+\midrule
+Multiple runs (5x) & R² = 0.54 $\pm$ 0.02 & Consistent \\
+Categorical distribution & Chi² p $>$ 0.97 & Pass \\
+Correlation preservation & Diff $<$ 0.07 & Pass \\
+Bidirectional training & 85\% both directions & Pass \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+
+\subsection{Why Diffusion Outperforms CTGAN}
+
+CTGAN uses adversarial training, which can be unstable and prone to mode collapse. Diffusion models:
+
+\begin{itemize}
+    \item Have stable training dynamics
+    \item Learn the full data distribution through iterative refinement
+    \item Better preserve rare patterns in the data
+\end{itemize}
+
+\subsection{Why SMOGN Fails}
+
+SMOGN generates samples by interpolating between existing points. In high-dimensional spaces with complex categorical structures:
+
+\begin{itemize}
+    \item Interpolation produces unrealistic combinations
+    \item The method cannot handle discrete features properly
+    \item Generated samples fall outside the true data manifold
+\end{itemize}
+
+\textbf{Why SMOGN fails even in augmentation:} Counter-intuitively, adding SMOGN synthetic data to real data (augmentation) produces \textit{worse} results than using real data alone (R² drops from 0.6451 to -0.1354). This occurs because unrealistic synthetic samples corrupt training data quality; the model learns incorrect patterns from bad synthetic records, which hurts generalization more than the extra data volume helps. This is a critical finding: \textbf{SMOGN is not just ``less effective'' but actively harmful} on complex tabular data.
+
+\subsection{Practical Implications}
+
+Organizations can use TabDDPM-style diffusion to:
+
+\begin{enumerate}
+    \item \textbf{Share data safely}: Partners receive synthetic data with 87\% utility
+    \item \textbf{Enable collaboration}: ML models trained on synthetic data work on real data
+    \item \textbf{Comply with regulations}: No individual records are exposed
+\end{enumerate}

@@ -1,0 +1,128 @@
+% Preamble - Package imports and settings
+% SEDS500 Project Report - LaTeX Version
+
+% Document class
+\documentclass[12pt,a4paper]{report}
+
+% Page geometry
+\usepackage[
+    top=2.5cm,
+    bottom=2.5cm,
+    left=2.5cm,
+    right=2.5cm
+]{geometry}
+
+% Language and encoding
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+
+% Fonts
+\usepackage{times}  % Times New Roman font
+
+% Graphics
+\usepackage{graphicx}
+\usepackage{float}
+\graphicspath{{images/}{figures/}{../figures/}}
+
+% Tables
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+
+% Colors
+\usepackage[table]{xcolor}
+\definecolor{iztechred}{RGB}{153,0,51}
+
+% Math
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+
+% Bibliography
+\usepackage[
+    backend=biber,
+    style=numeric,
+    sorting=none,
+    maxbibnames=99
+]{biblatex}
+\addbibresource{references.bib}
+
+% Hyperlinks
+\usepackage[
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=blue,
+    urlcolor=blue
+]{hyperref}
+
+% Allow URLs to break at any character
+\expandafter\def\expandafter\UrlBreaks\expandafter{\UrlBreaks\do\/\do-\do_}
+
+% Headers and footers
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+
+% Make plain style match fancy (for chapter pages, TOC, etc.)
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyhead[R]{\thepage}
+    \renewcommand{\headrulewidth}{0pt}
+}
+
+% Section formatting
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+    {\normalfont\Large\bfseries\raggedright}
+    {\chaptertitlename\ \thechapter}{10pt}{\LARGE\raggedright}
+\titlespacing*{\chapter}{0pt}{-20pt}{10pt}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+\titlespacing*{\subsection}{0pt}{10pt}{4pt}
+
+% Prevent hyphenation in chapter/section titles
+\usepackage{hyphenat}
+
+% TOC, LOT, LOF formatting
+\usepackage{tocloft}
+\renewcommand{\contentsname}{TABLE OF CONTENTS}
+\renewcommand{\listtablename}{LIST OF TABLES}
+\renewcommand{\listfigurename}{LIST OF FIGURES}
+\setlength{\cftbeforechapskip}{8pt}
+
+% Caption formatting
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+
+% Code listings
+\usepackage{listings}
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    numbers=none,
+    showstringspaces=false
+}
+
+% Spacing
+\usepackage{setspace}
+\singlespacing
+
+% Paragraph formatting
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+% Reduce list spacing
+\usepackage{enumitem}
+\setlist{noitemsep, topsep=3pt}
+
+% Custom commands
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+
+% For the documentation page table
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}

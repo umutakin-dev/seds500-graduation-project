@@ -1,0 +1,146 @@
+% Section 6: Conclusion
+\chapter{CONCLUSION}
+
+\section{Summary}
+
+This project demonstrated that diffusion models, specifically TabDDPM-style implementations, are superior for privacy-preserving synthetic tabular data generation. Our key contributions:
+
+\begin{enumerate}
+    \item \textbf{Implementation}: Hybrid Gaussian-Multinomial diffusion with TabDDPM-style improvements
+    \item \textbf{Evaluation}: Comprehensive utility and privacy testing framework
+    \item \textbf{Results}: 87\% utility retention with zero privacy leakage
+\end{enumerate}
+
+\section{Key Findings}
+
+The table below summarizes our main findings across all experiments. TabDDPM achieves the highest utility while maintaining excellent privacy. The method generalizes across different datasets and prediction tasks. SMOGN fails catastrophically on complex tabular data, while CTGAN achieves moderate results. The specific TabDDPM improvements (log-space operations, KL loss) are essential for good performance.
+
+\begin{table}[H]
+\centering
+\caption{Summary of Key Findings}
+\label{tab:findings}
+\begin{tabularx}{\textwidth}{@{}XX@{}}
+\toprule
+\textbf{Finding} & \textbf{Evidence} \\
+\midrule
+TabDDPM achieves highest utility & 87--98\% vs 35\% (CTGAN) for replacement \\
+Generalizes across datasets & Ozel Rich: 87\%, Production: 98\% \\
+All diffusion variants are privacy-safe & MIA AUC $\approx$ 0.51 \\
+SMOGN fails on complex tabular data & Negative R² on mixed-type datasets \\
+TabDDPM improvements are essential & 3.3x better than simple diffusion \\
+Preprocessing is critical & MinMaxScaler + outlier clipping required \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{fig9_key_results_summary.png}
+    \caption{Summary of key results showing 87--98\% utility retention across datasets, 0.51 privacy AUC (equivalent to random guessing), and 3.3x improvement over simple diffusion.}
+    \label{fig:summary}
+\end{figure}
+
+\section{Limitations}
+
+\textbf{Dataset scope:}
+
+\begin{itemize}
+    \item Evaluated on two organizational datasets rather than standard public benchmarks (Adult, Covertype, etc.)
+    \item This was a deliberate choice: our research question focused on real-world applicability for privacy-preserving data sharing, not benchmark optimization
+    \item The TabDDPM paper \cite{kotelnikov2023} evaluated on 15 benchmarks; our project prioritized depth on practical datasets over breadth
+    \item Future work should validate on standard benchmarks for direct comparison with published results
+\end{itemize}
+
+\textbf{Methodological:}
+
+\begin{itemize}
+    \item Did not implement TabSyn (latent diffusion) for comparison
+    \item CTGAN used default hyperparameters from the SDV library; tuned CTGAN might perform better
+    \item Privacy evaluation used basic membership inference; stronger attacks (shadow models, attribute inference) not tested
+\end{itemize}
+
+\textbf{Practical:}
+
+\begin{itemize}
+    \item Training requires GPU resources (5--30 minutes on RTX 4070 Ti depending on dataset size)
+    \item Generation is slower than GAN-based methods ($\sim$30 seconds vs $\sim$2 seconds for 2,670 samples)
+\end{itemize}
+
+\section{Future Work}
+
+\subsection{Techniques from Other Diffusion Papers}
+
+\begin{table}[H]
+\centering
+\caption{Future Techniques to Explore}
+\label{tab:future-techniques}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+\textbf{Paper} & \textbf{Technique} & \textbf{Potential Benefit} \\
+\midrule
+STaSy & Self-paced learning & More stable training on imbalanced data \\
+TabSyn & Latent space diffusion & Better handling of high-dimensional data \\
+Score-based & Continuous-time diffusion & Potentially higher sample quality \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Enhanced Privacy Protections}
+
+\begin{table}[H]
+\centering
+\caption{Privacy Enhancement Options}
+\label{tab:privacy-enhancements}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+\textbf{Technique} & \textbf{Description} & \textbf{Why Important} \\
+\midrule
+Differential Privacy & Add calibrated noise to training & Formal privacy guarantees \\
+PATE & Private Aggregation of Teacher Ensembles & Provable privacy bounds \\
+Adversarial training & Train against MIA during generation & Actively resist attacks \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+While our MIA AUC of 0.51 shows no current leak, future work should:
+
+\begin{itemize}
+    \item Test against stronger attack variants (shadow model attacks, label-only attacks)
+    \item Implement formal differential privacy guarantees
+    \item Evaluate against attribute inference attacks
+\end{itemize}
+
+\subsection{Practical Applications}
+
+\begin{table}[H]
+\centering
+\caption{Practical Application Directions}
+\label{tab:applications}
+\begin{tabularx}{\textwidth}{@{}llX@{}}
+\toprule
+\textbf{Application} & \textbf{Description} & \textbf{Benefit} \\
+\midrule
+Web interface & Browser-based UI for non-technical users & Accessibility \\
+API service & REST API for synthetic data generation & Integration \\
+Edge deployment & Run on local machines without cloud & Data never leaves premises \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+A browser-based application would allow:
+
+\begin{itemize}
+    \item Upload CSV $\rightarrow$ Generate synthetic data $\rightarrow$ Download
+    \item Privacy dashboard showing MIA scores
+    \item Utility metrics visualization
+\end{itemize}
+
+\subsection{Conditional Generation}
+
+Extend the model to generate data conditioned on specific attributes:
+
+\begin{itemize}
+    \item Generate synthetic patients with specific conditions
+    \item Create balanced datasets for rare classes
+    \item Enable what-if analysis scenarios
+\end{itemize}

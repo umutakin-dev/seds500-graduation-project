@@ -1,0 +1,57 @@
+% Appendix A: Experiment Details
+\chapter{Experiment Details}
+\label{app:experiment-details}
+
+\section{Hyperparameters}
+
+\subsection{Ozel Rich (Experiment 018)}
+
+\begin{table}[H]
+\centering
+\caption{Ozel Rich Hyperparameters}
+\label{tab:hyperparams-ozel}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Epochs & 1000 \\
+Batch size & 128 \\
+Learning rate & $10^{-4}$ \\
+Hidden dimensions & [256, 256, 256] \\
+Dropout & 0.1 \\
+Diffusion timesteps & 1000 \\
+Beta schedule & Cosine \\
+Optimizer & AdamW \\
+Weight decay & $10^{-5}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Production (Experiment 019)}
+
+\begin{table}[H]
+\centering
+\caption{Production Hyperparameters}
+\label{tab:hyperparams-production}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Epochs & 1000 \\
+Batch size & 128 \\
+Learning rate & $10^{-4}$ \\
+Hidden dimensions & [512, 512, 512, 512] \\
+Dropout & 0.1 \\
+Diffusion timesteps & 1000 \\
+Beta schedule & Cosine \\
+Optimizer & AdamW \\
+Weight decay & $10^{-5}$ \\
+Outlier clipping & 1st--99th percentile \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Code Availability}
+
+Source code is available at:\\
+\url{https://github.com/umutakin-dev/seds500-graduation-project}

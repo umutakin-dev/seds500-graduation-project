@@ -1,0 +1,213 @@
+% Section 4: Proposed Approach
+\chapter{PROPOSED APPROACH}
+
+\section{Our Model: TabDDPM-style Hybrid Diffusion}
+
+\textbf{What is our model?}
+
+Our model is a \textbf{hybrid diffusion model} that generates synthetic tabular data by learning to reconstruct clean records from corrupted (noisy) versions. It combines two types of diffusion processes tailored to different data types: Gaussian diffusion for numerical columns (adding continuous noise from a normal distribution) and multinomial diffusion for categorical columns (gradually mixing category probabilities toward a uniform distribution).
+
+\begin{table}[H]
+\centering
+\caption{Diffusion Types by Data Type}
+\label{tab:diffusion-types}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Data Type} & \textbf{Diffusion Type} & \textbf{How Noise is Added} \\
+\midrule
+Numerical columns & Gaussian & Add random noise from normal distribution \\
+Categorical columns & Multinomial & Mix category probabilities toward uniform \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{The model consists of:}
+
+\begin{enumerate}
+    \item \textbf{Preprocessor}: Normalizes numerical columns, encodes categorical columns
+    \item \textbf{Denoiser network}: 3-layer MLP (256 hidden units each) that predicts clean data from noisy input
+    \item \textbf{Diffusion scheduler}: Controls noise levels across 1000 timesteps using cosine schedule \cite{nichol2021}
+\end{enumerate}
+
+\textbf{Implementation approach:}
+
+Our implementation is a \textbf{reimplementation} of TabDDPM concepts, not a direct fork of the original codebase. We developed two versions iteratively:
+
+\begin{table}[H]
+\centering
+\caption{Implementation Versions}
+\label{tab:versions}
+\begin{tabular}{@{}llr@{}}
+\toprule
+\textbf{Version} & \textbf{Approach} & \textbf{Result} \\
+\midrule
+V6 (Simple) & Basic diffusion with cross-entropy loss for categoricals & 26.5\% of baseline \\
+Exp 018 (TabDDPM-style) & Log-space ops, KL divergence loss, Gumbel-softmax & 87.3\% of baseline \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The 3.3x improvement from V6 to Exp 018 demonstrates the importance of the specific techniques introduced in the TabDDPM paper \cite{kotelnikov2023}. Our reimplementation allowed us to understand and validate each component's contribution.
+
+\section{What is the Baseline?}
+
+\textbf{Baseline Definition:}
+
+The \textbf{baseline} represents the best possible performance, training a machine learning model on the \textbf{original real data} and testing on held-out real data.
+
+\begin{table}[H]
+\centering
+\caption{Baseline Definition}
+\label{tab:baseline-def}
+\begin{tabular}{@{}llr@{}}
+\toprule
+\textbf{Term} & \textbf{Definition} & \textbf{R² Value} \\
+\midrule
+Baseline & ML model trained on real data & 0.6451 \\
+Replacement & ML model trained on synthetic data only & Varies by method \\
+Augmentation & ML model trained on real + synthetic & Varies by method \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Why this baseline?}
+
+\begin{itemize}
+    \item If synthetic data is perfect, training on it should give the same R² as training on real data
+    \item The percentage of baseline (e.g., 87\%) tells us how much utility is preserved
+    \item A method that achieves 100\% baseline would be indistinguishable from real data for ML purposes
+\end{itemize}
+
+\section{Problem Formulation}
+
+Given a training dataset $D = \{(x_1, y_1), ..., (x_n, y_n)\}$ where each sample contains:
+
+\begin{itemize}
+    \item Numerical features: $x_{num} \in \mathbb{R}^d$
+    \item Categorical features: $x_{cat} \in \{1,...,K_1\} \times ... \times \{1,...,K_m\}$
+    \item Target variable: $y \in \mathbb{R}$
+\end{itemize}
+
+Our goal is to learn a generative model $G$ that produces synthetic samples indistinguishable from real data in terms of:
+
+\begin{enumerate}
+    \item Marginal distributions of each feature
+    \item Joint feature-target relationships
+    \item Downstream ML task performance
+\end{enumerate}
+
+\section{Hybrid Diffusion Architecture}
+
+\subsection{Gaussian Diffusion for Numerical Features}
+
+For numerical columns, we apply standard Gaussian diffusion. The mathematical formulation uses the following notation:
+
+\begin{itemize}
+    \item $q(\cdot)$: The forward process distribution that adds noise to data
+    \item $p_\theta(\cdot)$: The learned reverse process with neural network parameters $\theta$
+    \item $x_t$: The data at timestep $t$ ($x_0$ is clean data, $x_T$ is pure noise)
+    \item $\beta_t$: The noise schedule controlling how much noise is added at step $t$
+    \item $\mathcal{N}(\mu, \sigma^2)$: Normal (Gaussian) distribution with mean $\mu$ and variance $\sigma^2$
+    \item $I$: Identity matrix (for multivariate case)
+\end{itemize}
+
+\textbf{Forward process} (adding noise):
+
+\begin{equation}
+q(x_t | x_{t-1}) = \mathcal{N}(x_t; \sqrt{1-\beta_t} x_{t-1}, \beta_t I)
+\label{eq:forward}
+\end{equation}
+
+This equation states that at each timestep, the data $x_t$ is sampled from a Gaussian distribution centered at a scaled version of the previous timestep's data, with variance controlled by $\beta_t$.
+
+\textbf{Reverse process} (denoising):
+
+\begin{equation}
+p_\theta(x_{t-1} | x_t) = \mathcal{N}(x_{t-1}; \mu_\theta(x_t, t), \sigma^2_t I)
+\label{eq:reverse}
+\end{equation}
+
+Here, $\mu_\theta(x_t, t)$ is the mean predicted by our neural network given noisy data $x_t$ and timestep $t$. The model learns to predict the original clean data $x_0$ from noisy observations.
+
+\subsection{Multinomial Diffusion for Categorical Features}
+
+For categorical columns with $K$ classes, we use multinomial diffusion:
+
+\textbf{Forward process}: Gradually corrupt one-hot encodings toward uniform distribution
+
+\begin{equation}
+q(x_t | x_{t-1}) = \text{Cat}(x_t; (1-\beta_t) x_{t-1} + \beta_t/K)
+\label{eq:cat-forward}
+\end{equation}
+
+This equation shows that at each step, the category probabilities are interpolated between the previous distribution and a uniform distribution ($1/K$ for each class).
+
+\textbf{Reverse process}: Predict original category distribution
+
+Key implementation details from TabDDPM \cite{kotelnikov2023}:
+
+\begin{itemize}
+    \item \textbf{Log-space operations}: All probability computations in log-space for numerical stability
+    \item \textbf{KL divergence loss}: Loss $= D_{KL}(q(x_{t-1}|x_t, x_0) \| p_\theta(x_{t-1}|x_t))$
+    \item \textbf{Gumbel-softmax sampling}: Differentiable categorical sampling during generation \cite{jang2017}
+\end{itemize}
+
+\subsection{Neural Network Architecture}
+
+We use an MLP denoiser with:
+
+\begin{itemize}
+    \item \textbf{Input}: concatenated [numerical features, categorical log-probabilities, timestep embedding]
+    \item \textbf{Hidden layers}: 3 layers of 256 units with ReLU activation and dropout
+    \item \textbf{Output}: predicted clean data (numerical values + categorical logits)
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{fig7_architecture.png}
+    \caption{The denoiser takes noisy data and timestep as input, predicting clean data. MSE loss for numerical columns, KL divergence for categorical.}
+    \label{fig:architecture}
+\end{figure}
+
+\section{Training Procedure}
+
+The training procedure consists of three main phases: data preprocessing, the training loop itself, and the generation phase.
+
+\textbf{Data Preprocessing:} Before training, numerical features are normalized using MinMax scaling to the range $[-1, 1]$, which ensures all features are on a comparable scale. Categorical features are converted to integer indices for efficient processing.
+
+\textbf{Training Loop:} The model is trained for 1000 epochs. In each iteration, we sample a batch of training data and a random timestep $t$ uniformly from 1 to $T$ (where $T=1000$). We then add noise to the batch according to the forward process equations described above, using the noise schedule $\beta_t$. The neural network predicts the clean data from this noisy input, and we compute the loss: mean squared error (MSE) for numerical features and KL divergence for categorical features. The model parameters are updated using the AdamW optimizer with a learning rate of $10^{-4}$.
+
+\textbf{Generation:} To generate new synthetic samples, we start from pure Gaussian noise for numerical features and uniform categorical probabilities. We then iteratively apply the learned reverse process for $T$ steps, progressively denoising the data. Finally, we apply inverse preprocessing to convert the generated values back to the original feature scales.
+
+\section{Evaluation Methodology}
+
+\subsection{Utility Evaluation}
+
+We evaluate utility through two scenarios:
+
+\textbf{Augmentation}: Original + Synthetic data for training
+\begin{itemize}
+    \item Measures whether synthetic data adds value
+    \item Target: maintain or improve baseline performance
+\end{itemize}
+
+\textbf{Replacement}: Synthetic data only for training
+\begin{itemize}
+    \item Measures standalone synthetic data quality
+    \item Target: achieve high percentage of baseline performance
+\end{itemize}
+
+Downstream task: Regression with Random Forest, Gradient Boosting, Ridge
+
+Metric: R² (coefficient of determination)
+
+\subsection{Privacy Evaluation}
+
+Membership inference attack:
+
+\begin{enumerate}
+    \item Generate synthetic dataset
+    \item For each real record, compute distance to nearest synthetic sample
+    \item Train classifier to distinguish members (training set) from non-members (test set)
+    \item Report attack AUC
+\end{enumerate}

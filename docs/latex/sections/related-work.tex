@@ -1,0 +1,184 @@
+% Section 3: Related Work
+\chapter{RELATED WORK}
+
+\section{Comparison of Synthetic Data Generation Methods}
+
+Several approaches exist for generating synthetic tabular data, each with distinct trade-offs between quality, speed, and applicability. Interpolation-based methods like SMOGN are computationally efficient but struggle with complex feature interactions and categorical data. GAN-based approaches like CTGAN can capture complex distributions but suffer from training instability. Diffusion models offer a balance of stability and quality, though with slower generation times.
+
+\begin{table}[H]
+\centering
+\caption{Method Comparison Summary}
+\label{tab:method-comparison}
+\begin{tabular}{@{}llp{5cm}p{2.5cm}p{3.5cm}@{}}
+\toprule
+\textbf{Method} & \textbf{Type} & \textbf{How It Works} & \textbf{Strengths} & \textbf{Weaknesses} \\
+\midrule
+SMOGN & Interpolation & Creates new points between existing data & Fast, simple & Fails on complex data, can't handle categories \\
+CTGAN & GAN & Generator vs Discriminator competition & Good for categorical & Training unstable, mode collapse risk \\
+TabDDPM & Diffusion & Learns to denoise corrupted data & Stable, high quality & Slower generation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Traditional Methods: SMOGN}
+
+SMOGN (Synthetic Minority Over-sampling Technique for Regression with Gaussian Noise) extends SMOTE to regression problems \cite{branco2017}. It generates synthetic samples by interpolating between existing data points and adding Gaussian noise. While computationally efficient, SMOGN:
+
+\begin{itemize}
+    \item Only handles numerical features natively
+    \item Can produce unrealistic samples in high-dimensional spaces
+    \item May fail catastrophically on complex feature interactions
+\end{itemize}
+
+\section{GAN-based Methods: CTGAN}
+
+CTGAN (Conditional Tabular GAN) addresses tabular data challenges through \cite{xu2019}:
+
+\begin{itemize}
+    \item Mode-specific normalization for numerical columns
+    \item Conditional generation for categorical columns
+    \item Training-by-sampling to handle imbalanced data
+\end{itemize}
+
+CTGAN has become a standard baseline for tabular data synthesis, achieving reasonable utility in replacement scenarios.
+
+\section{Diffusion Models for Tabular Data}
+
+\subsection{TabDDPM (ICML 2023) -- Our Primary Reference}
+
+Kotelnikov et al. \cite{kotelnikov2023} introduced TabDDPM, adapting denoising diffusion probabilistic models for tabular data.
+
+\textbf{Why we chose TabDDPM as our primary reference:}
+
+\begin{itemize}
+    \item \textbf{High citation impact}: 200+ citations in under 2 years (as of 2025)
+    \item \textbf{Proven results}: State-of-the-art on standard tabular benchmarks
+    \item \textbf{Clear methodology}: Well-documented hybrid diffusion approach
+    \item \textbf{Reproducible}: Open-source implementation available
+\end{itemize}
+
+Key innovations include:
+
+\begin{itemize}
+    \item \textbf{Hybrid noise model}: Gaussian noise for numerical, multinomial diffusion for categorical
+    \item \textbf{Log-space operations}: Numerical stability in probability computations
+    \item \textbf{KL divergence loss}: Respects diffusion process structure for categorical variables
+\end{itemize}
+
+\subsection{STaSy (ICLR 2023)}
+
+Kim et al. \cite{kim2023} proposed STaSy, introducing self-paced learning to stabilize diffusion training on tabular data. The method addresses training instability by gradually increasing task difficulty.
+
+\textbf{Key technique}: Self-paced learning curriculum that starts with easy samples and progressively includes harder ones.
+
+\subsection{TabSyn (ICLR 2024)}
+
+Zhang et al. \cite{zhang2024} developed TabSyn, combining VAE-based latent representations with diffusion. By operating in a learned latent space, TabSyn achieves current state-of-the-art results on tabular benchmarks.
+
+\textbf{Key technique}: Transformer-based VAE encodes tabular data into latent space, then diffusion operates in this compressed representation.
+
+\section{Why TabDDPM? Rationale for Our Choice}
+
+Given three diffusion-based approaches (TabDDPM, STaSy, TabSyn), we chose TabDDPM as our implementation basis. This section explains the rationale.
+
+\subsection{Research Question Alignment}
+
+Our research question asks: \textit{``Do diffusion models produce more realistic synthetic data than traditional methods?''}
+
+To answer this question, we need to compare \textbf{diffusion-based methods vs non-diffusion methods} (CTGAN, SMOGN). We do not need the most advanced diffusion variant, we need a representative, well-validated one. TabDDPM serves this purpose.
+
+\subsection{Foundational Approach}
+
+TabDDPM introduced the core innovation for tabular diffusion: \textbf{hybrid Gaussian-Multinomial noise handling}. Both STaSy and TabSyn build upon this foundation:
+
+\begin{table}[H]
+\centering
+\caption{Diffusion Methods Comparison}
+\label{tab:diffusion-methods}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Method} & \textbf{Builds On} & \textbf{Additional Complexity} \\
+\midrule
+TabDDPM & Original DDPM & Hybrid noise for mixed types \\
+STaSy & TabDDPM concepts & + Self-paced learning curriculum \\
+TabSyn & TabDDPM concepts & + VAE + Transformer encoder \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Understanding and correctly implementing TabDDPM is a prerequisite before adding further complexity.
+
+\subsection{Isolating the Diffusion Contribution}
+
+TabSyn combines multiple techniques: VAE encoding, Transformer architecture, and latent-space diffusion. If TabSyn outperforms traditional methods, it becomes unclear whether the improvement comes from:
+
+\begin{itemize}
+    \item The diffusion process itself, or
+    \item The VAE's learned representations, or
+    \item The Transformer's attention mechanisms
+\end{itemize}
+
+By using TabDDPM, which applies diffusion directly to data without additional components, we can \textbf{clearly attribute performance gains to the diffusion approach itself}.
+
+\subsection{Dataset Characteristics}
+
+TabSyn's latent-space approach provides the most benefit on large, high-dimensional datasets where compression is valuable. Our datasets have different characteristics:
+
+\begin{table}[H]
+\centering
+\caption{Dataset Characteristics vs Latent Space Benefit}
+\label{tab:dataset-characteristics}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Dataset} & \textbf{Samples} & \textbf{Features} & \textbf{Latent Space Benefit} \\
+\midrule
+Production & 5,370 & 117 & Moderate \\
+Ozel Rich & 2,670 & 29 & Moderate \\
+ImageNet (TabSyn paper) & 1.2M+ & 1000+ & High \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For our dataset scale, direct diffusion (TabDDPM) is appropriate and avoids unnecessary complexity.
+
+\subsection{Community Validation}
+
+TabDDPM has the strongest community validation among tabular diffusion methods:
+
+\begin{table}[H]
+\centering
+\caption{Citation Counts (2025)}
+\label{tab:citations}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Method} & \textbf{Venue} & \textbf{Citations (2025)} & \textbf{Time Since Publication} \\
+\midrule
+TabDDPM & ICML 2023 & 200+ & $\sim$2 years \\
+STaSy & ICLR 2023 & $\sim$100 & $\sim$2 years \\
+TabSyn & ICLR 2024 & $\sim$50 & $\sim$1 year \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Higher citation count indicates more researchers have tested, validated, and documented edge cases for TabDDPM.
+
+\subsection{Future Work: Other Diffusion Techniques}
+
+Our choice of TabDDPM does not preclude future exploration. Having established that diffusion outperforms traditional methods, natural extensions include:
+
+\begin{itemize}
+    \item \textbf{STaSy's self-paced learning}: May improve training stability on imbalanced data
+    \item \textbf{TabSyn's latent diffusion}: May provide benefits on larger, higher-dimensional datasets
+\end{itemize}
+
+These are discussed further in Section 6.4 (Future Work).
+
+\section{Privacy Evaluation}
+
+Membership inference attacks (MIA) are the standard method for evaluating synthetic data privacy \cite{shokri2017}. An attacker trains a classifier to distinguish records that were in the training set (``members'') from those that were not (``non-members''). The attack's success, measured by AUC:
+
+\begin{itemize}
+    \item AUC $\approx$ 0.5: No information leak (random guessing)
+    \item AUC $>$ 0.6: Privacy concern
+    \item AUC $>$ 0.7: Significant privacy risk
+\end{itemize}

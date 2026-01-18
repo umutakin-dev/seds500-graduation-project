@@ -1,0 +1,43 @@
+% Report Documentation Page
+\newpage
+\thispagestyle{empty}
+
+% IZTECH Logo - top right corner
+\hfill\includegraphics[width=2.5cm]{iztech-logo.png}
+
+\vspace{-0.5cm}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|p{7.5cm}|p{7.5cm}|}
+\hline
+\multicolumn{2}{|c|}{\textbf{\Large REPORT DOCUMENTATION PAGE}} \\
+\hline
+\textbf{1. AGENCY USE ONLY} (Internal Use) &
+\textbf{2. REPORT DATE} \newline 16.01.2026 \\
+\hline
+\multicolumn{2}{|p{15.4cm}|}{\textbf{3. TITLE AND SUBTITLE} \newline\newline
+Privacy-Preserving Synthetic Tabular Data Generation Using Diffusion Models} \\
+\hline
+\textbf{4. AUTHOR(S)} \newline\newline Umut Ak{\i}n &
+\textbf{5. REPORT NUMBER} (Internal Use) \newline\newline IZTECH/CENG-TR-2026-XX \\
+\hline
+\multicolumn{2}{|p{15.4cm}|}{\textbf{6. SPONSORING/MONITORING AGENCY NAME(S) AND SIGNATURE(S)} \newline
+M.S. Program in Software Engineering and Data Science, Department of Computer Engineering, IYTE \newline\newline
+\textbf{Advisor:} \hspace{5cm} \textbf{Signature:}} \\
+\hline
+\multicolumn{2}{|p{15.4cm}|}{\textbf{7. SUPPLEMENTARY NOTES} \newline\newline} \\
+\hline
+\multicolumn{2}{|p{15.4cm}|}{\textbf{8. ABSTRACT} \newline\newline
+{\small Organizations increasingly need to share sensitive tabular data for machine learning while protecting individual privacy. This project investigates diffusion models as a privacy-preserving approach for generating synthetic tabular data. We implement and evaluate TabDDPM-style diffusion with hybrid Gaussian-Multinomial noise handling, comparing it against CTGAN and SMOGN baselines. Our experiments on organizational datasets demonstrate that TabDDPM-style diffusion achieves 87-98\% of baseline model performance when training on synthetic data alone, significantly outperforming CTGAN (35\%) and SMOGN (which fails catastrophically on complex data). Privacy validation through membership inference attacks confirms that the generated data leaks no information about training records (AUC = 0.51, equivalent to random guessing). These results establish diffusion models as a superior approach for generating high-utility, privacy-preserving synthetic tabular data.}
+} \\
+\hline
+\textbf{9. SUBJECT TERMS} \newline\newline
+{\small Diffusion models, synthetic data, privacy, tabular data, TabDDPM} &
+\textbf{10. NUMBER OF PAGES} \newline\newline
+29 \\
+\hline
+\end{tabular}
+\end{center}
+
+\clearpage
