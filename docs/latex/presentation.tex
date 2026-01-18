@@ -91,7 +91,7 @@
 
 % Outline - Staircase layout
 \begin{frame}{Outline}
-    \vspace{0.5cm}
+    \vspace{-0.5cm}
     \Large
     \begin{flushleft}
         \hspace{0.5cm}\textcolor{draculapurple}{\textbf{1}} \textcolor{draculacyan}{Abstract}\\[0.4cm]
@@ -193,10 +193,16 @@
 \end{frame}
 
 \begin{frame}{Proposed Solution}
-    \textbf{Implement TabDDPM-style diffusion for tabular data generation}
+    \begin{center}
+    \tikz{
+        \node[fill=draculapurple, rounded corners=5pt, inner sep=10pt, text=draculafg] {
+            \large\textbf{Implement TabDDPM-style diffusion for tabular data generation}
+        };
+    }
+    \end{center}
 
-    \vspace{0.5cm}
-    \begin{columns}
+    \vspace{0.3cm}
+    \begin{columns}[t]
         \column{0.5\textwidth}
         \textbf{Key innovations:}
         \begin{itemize}
