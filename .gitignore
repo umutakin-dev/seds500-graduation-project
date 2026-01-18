@@ -71,3 +71,14 @@ repos/
 # uv
 .venv/
 uv.lock
+
+# Claude Code settings
+.claude/
+
+# Template files
+docs/project-report-templates/
+
+# Debug/experimental scripts
+src/debug_*.py
+src/test_*.py
+src/check_*.py
