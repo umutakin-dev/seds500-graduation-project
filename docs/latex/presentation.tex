@@ -89,20 +89,6 @@
     \titlepage
 \end{frame}
 
-% Outline - Staircase layout
-\begin{frame}{Outline}
-    \vspace{-0.5cm}
-    \Large
-    \begin{flushleft}
-        \hspace{0.5cm}\textcolor{draculapurple}{\textbf{1}} \textcolor{draculacyan}{Abstract}\\[0.4cm]
-        \hspace{2.0cm}\textcolor{draculapurple}{\textbf{2}} \textcolor{draculacyan}{Introduction}\\[0.4cm]
-        \hspace{3.5cm}\textcolor{draculapurple}{\textbf{3}} \textcolor{draculacyan}{Related Research}\\[0.4cm]
-        \hspace{5.0cm}\textcolor{draculapurple}{\textbf{4}} \textcolor{draculacyan}{Solution Approach}\\[0.4cm]
-        \hspace{6.5cm}\textcolor{draculapurple}{\textbf{5}} \textcolor{draculacyan}{Validation Approach}\\[0.4cm]
-        \hspace{8.0cm}\textcolor{draculapurple}{\textbf{6}} \textcolor{draculacyan}{Conclusion \& Future Work}
-    \end{flushleft}
-\end{frame}
-
 %===============================================
 \section{Abstract}
 %===============================================
@@ -134,62 +120,41 @@
 \section{Introduction}
 %===============================================
 
-\begin{frame}{Motivation: Data Sharing vs Privacy}
+\begin{frame}{Motivation \& Problem Definition}
     \begin{columns}
-        \column{0.05\textwidth}
-        \column{0.45\textwidth}
-        \textbf{Organizations want to:}
+        \column{0.5\textwidth}
+        \textbf{The Challenge:}
         \begin{itemize}
-            \item Share data with partners
-            \item Enable ML research
-            \item Collaborate across teams
+            \item Organizations need to share data for ML collaboration
+            \item Privacy regulations (GDPR, KVKK) restrict data sharing
+            \item Traditional methods (GANs, interpolation) struggle with mixed data types
         \end{itemize}
 
-        \vspace{0.5cm}
-        \textbf{But they face:}
-        \begin{itemize}
-            \item Privacy regulations (GDPR, KVKK)
-            \item Sensitive customer data
-            \item Competitive concerns
-        \end{itemize}
+        \vspace{0.4cm}
+        \begin{block}{Research Question}
+            Do diffusion models produce more realistic synthetic tabular data than traditional methods?
+        \end{block}
 
         \column{0.5\textwidth}
         \centering
         \textbf{Solution: Synthetic Data}
 
-        \vspace{0.3cm}
-        \begin{tikzpicture}[scale=0.8]
-            \node[draw=draculapurple, line width=2pt, rectangle, fill=draculacurrent, text=draculafg, minimum width=2.5cm, minimum height=1cm] at (0,2) {Real Data};
-            \draw[->, line width=2pt, draculacyan] (0,1.3) -- (0,0.7);
-            \node[draw=draculagreen, line width=2pt, rectangle, fill=draculacurrent, text=draculafg, minimum width=2.5cm, minimum height=1cm] at (0,0) {Generator};
-            \draw[->, line width=2pt, draculacyan] (0,-0.7) -- (0,-1.3);
-            \node[draw=draculaorange, line width=2pt, rectangle, fill=draculacurrent, text=draculafg, minimum width=2.5cm, minimum height=1cm] at (0,-2) {Synthetic Data};
+        \vspace{0.2cm}
+        \begin{tikzpicture}[scale=0.7]
+            \node[draw=draculapurple, line width=2pt, rectangle, fill=draculacurrent, text=draculafg, minimum width=2.2cm, minimum height=0.8cm] at (0,1.5) {Real Data};
+            \draw[->, line width=2pt, draculacyan] (0,0.9) -- (0,0.5);
+            \node[draw=draculagreen, line width=2pt, rectangle, fill=draculacurrent, text=draculafg, minimum width=2.2cm, minimum height=0.8cm] at (0,0) {Generator};
+            \draw[->, line width=2pt, draculacyan] (0,-0.5) -- (0,-0.9);
+            \node[draw=draculaorange, line width=2pt, rectangle, fill=draculacurrent, text=draculafg, minimum width=2.2cm, minimum height=0.8cm] at (0,-1.5) {Synthetic Data};
         \end{tikzpicture}
 
         \vspace{0.3cm}
-        \small Same statistical properties,\\no original records exposed
+        \textbf{Evaluation Criteria:}
+        \begin{enumerate}
+            \item \textbf{Utility}: ML performance on real data
+            \item \textbf{Privacy}: No information leakage
+        \end{enumerate}
     \end{columns}
-\end{frame}
-
-\begin{frame}{Problem Definition \& Goal}
-    \begin{block}{Problem}
-        Traditional synthetic data methods (interpolation, GANs) struggle with complex tabular data containing mixed numerical and categorical features.
-    \end{block}
-
-    \vspace{0.3cm}
-    \begin{block}{Research Question}
-        \centering
-        When generating synthetic tabular data for privacy purposes,\\
-        \textbf{do diffusion models produce more realistic data}\\
-        than traditional methods?
-    \end{block}
-
-    \vspace{0.3cm}
-    \textbf{Evaluation Criteria:}
-    \begin{enumerate}
-        \item \textbf{Utility}: Can ML models trained on synthetic data perform well on real data?
-        \item \textbf{Privacy}: Does the synthetic data leak information about training records?
-    \end{enumerate}
 \end{frame}
 
 \begin{frame}{Proposed Solution}
@@ -266,88 +231,36 @@
 \section{Solution Approach}
 %===============================================
 
-\begin{frame}{Diffusion Models: Core Idea}
+\begin{frame}{Solution: TabDDPM Diffusion Model}
     \begin{columns}
-        \column{0.55\textwidth}
-        \textbf{Forward Process (Training):}
+        \column{0.5\textwidth}
+        \textbf{How Diffusion Works:}
         \begin{itemize}
-            \item Gradually add noise to data
-            \item Over $T=1000$ timesteps
-            \item Data becomes pure noise
+            \item \textbf{Forward}: Gradually add noise ($T$=1000 steps)
+            \item \textbf{Reverse}: Learn to denoise step-by-step
+            \item Neural network: noise $\rightarrow$ realistic data
         \end{itemize}
 
         \vspace{0.3cm}
-        \textbf{Reverse Process (Generation):}
+        \textbf{TabDDPM Hybrid Approach:}
         \begin{itemize}
-            \item Learn to denoise step-by-step
-            \item Neural network predicts noise
-            \item Random noise $\rightarrow$ realistic data
+            \item \textbf{Numerical}: Gaussian diffusion
+            \item \textbf{Categorical}: Multinomial diffusion
+            \item Process both simultaneously
         \end{itemize}
 
-        \column{0.45\textwidth}
+        \column{0.5\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{fig6_diffusion_process.png}
+        \includegraphics[width=0.95\textwidth]{fig6_diffusion_process.png}
+
+        \vspace{0.2cm}
+        \small\textit{Iterative denoising from random noise}
     \end{columns}
 
     \vspace{0.3cm}
-    \textbf{Key advantage:} Stable training, captures full distribution (no mode collapse)
-\end{frame}
-
-\begin{frame}{TabDDPM: Handling Mixed Data Types}
-    \textbf{Challenge:} Tabular data has both numerical and categorical features
-
-    \vspace{0.5cm}
-    \begin{columns}
-        \column{0.5\textwidth}
-        \textbf{Numerical Features:}
-        \begin{itemize}
-            \item Standard Gaussian diffusion
-            \item Add/remove continuous noise
-            \item Example: price, quantity
-        \end{itemize}
-
-        \column{0.5\textwidth}
-        \textbf{Categorical Features:}
-        \begin{itemize}
-            \item Multinomial diffusion
-            \item Transition between categories
-            \item Example: product type, material
-        \end{itemize}
-    \end{columns}
-
-    \vspace{0.5cm}
-    \begin{block}{Hybrid Approach}
-        \centering
-        Process numerical and categorical features simultaneously\\
-        with type-appropriate noise schedules
+    \begin{block}{Key Advantage}
+        Stable training + captures full distribution (no mode collapse like GANs)
     \end{block}
-\end{frame}
-
-\begin{frame}{Implementation Details}
-    \textbf{Key improvements over simple diffusion (26\% $\rightarrow$ 87\%):}
-
-    \vspace{0.3cm}
-    \begin{table}
-        \centering
-        \small
-        \begin{tabular}{lll}
-            \toprule
-            \textbf{Improvement} & \textbf{Problem Solved} & \textbf{Impact} \\
-            \midrule
-            Log-space operations & Probability underflow & Prevents NaN/Inf \\
-            KL divergence loss & Wrong loss for categories & Learns distributions \\
-            Gumbel-softmax & Non-differentiable argmax & Enables gradients \\
-            Proper posterior & Incorrect reverse process & Faithful reconstruction \\
-            \bottomrule
-        \end{tabular}
-    \end{table}
-
-    \vspace{0.3cm}
-    \textbf{Technical setup:}
-    \begin{itemize}
-        \item Framework: PyTorch | Hardware: NVIDIA RTX 4070 Ti Super (16GB)
-        \item Training: 1000 epochs, batch size 128, LR $10^{-4}$, cosine schedule
-    \end{itemize}
 \end{frame}
 
 %===============================================
@@ -381,12 +294,10 @@
     \textbf{Metrics:} R\textsuperscript{2} score (utility), MIA AUC (privacy)
 \end{frame}
 
-\begin{frame}{Results: Replacement Scenario}
-    \textbf{Train on synthetic data only, evaluate on real test data}
-
-    \vspace{0.3cm}
+\begin{frame}{Results: Utility Comparison}
     \begin{columns}
-        \column{0.45\textwidth}
+        \column{0.5\textwidth}
+        \textbf{Ozel Rich Dataset} (Replacement scenario)
         \begin{table}
             \centering
             \small
@@ -398,60 +309,38 @@
                 \midrule
                 SMOGN & -0.14 & FAILED \\
                 CTGAN & 0.229 & 35.5\% \\
-                Simple Diff & 0.171 & 26.5\% \\
                 \textbf{TabDDPM} & \textbf{0.563} & \textbf{87.3\%} \\
                 \bottomrule
             \end{tabular}
         \end{table}
 
-        \vspace{0.3cm}
-        \textbf{Key findings:}
-        \begin{itemize}
-            \item TabDDPM: 2.5$\times$ better than CTGAN
-            \item SMOGN: Catastrophic failure
-        \end{itemize}
-
-        \column{0.55\textwidth}
-        \centering
-        \includegraphics[width=\textwidth]{fig1_replacement_comparison.png}
-    \end{columns}
-\end{frame}
-
-\begin{frame}{Results: Production Dataset}
-    \textbf{Larger, more complex dataset (5,370 samples, 117 features after encoding)}
-
-    \vspace{0.3cm}
-    \begin{columns}
-        \column{0.5\textwidth}
+        \vspace{0.2cm}
+        \textbf{Production Dataset}
         \begin{table}
             \centering
+            \small
             \begin{tabular}{lrr}
                 \toprule
                 \textbf{Scenario} & \textbf{R\textsuperscript{2}} & \textbf{\%} \\
                 \midrule
-                Baseline & 0.994 & 100\% \\
                 Replacement & 0.979 & \textbf{98.4\%} \\
                 Augmentation & 0.994 & \textbf{100\%} \\
                 \bottomrule
             \end{tabular}
         \end{table}
 
-        \vspace{0.3cm}
-        \textbf{Cross-dataset comparison:}
-        \begin{itemize}
-            \item Ozel Rich: 87.3\% of baseline
-            \item Production: \textbf{98.4\%} of baseline
-        \end{itemize}
-
         \column{0.5\textwidth}
         \centering
-        \includegraphics[width=\textwidth]{fig4_method_summary.png}
-    \end{columns}
+        \includegraphics[width=0.95\textwidth]{fig4_method_summary.png}
 
-    \vspace{0.3cm}
-    \begin{block}{Insight}
-        TabDDPM generalizes well to larger, more complex datasets
-    \end{block}
+        \vspace{0.3cm}
+        \textbf{Key findings:}
+        \begin{itemize}
+            \item TabDDPM: \textbf{87--98\%} of baseline
+            \item CTGAN: 35\% | SMOGN: Failed
+            \item Generalizes across datasets
+        \end{itemize}
+    \end{columns}
 \end{frame}
 
 \begin{frame}{Results: Privacy Evaluation}
@@ -490,98 +379,49 @@
     \end{block}
 \end{frame}
 
-\begin{frame}{Discussion: Why Methods Differ}
-    \begin{columns}
-        \column{0.5\textwidth}
-        \textbf{Why TabDDPM succeeds:}
-        \begin{itemize}
-            \item Stable training dynamics
-            \item Learns full distribution
-            \item Iterative refinement
-            \item Preserves rare patterns
-        \end{itemize}
-
-        \vspace{0.3cm}
-        \textbf{Why CTGAN is moderate:}
-        \begin{itemize}
-            \item Mode collapse risk
-            \item Adversarial instability
-            \item May miss rare samples
-        \end{itemize}
-
-        \column{0.5\textwidth}
-        \textbf{Why SMOGN fails:}
-        \begin{itemize}
-            \item Interpolation in high dimensions
-            \item Cannot handle categoricals
-            \item Creates unrealistic combinations
-        \end{itemize}
-
-        \vspace{0.3cm}
-        \begin{alertblock}{Critical Finding}
-            SMOGN is not just ``less effective''\\
-            but \textbf{actively harmful} on complex data\\
-            (corrupts training, R\textsuperscript{2} goes negative)
-        \end{alertblock}
-    \end{columns}
-\end{frame}
-
 %===============================================
 \section{Conclusion \& Future Work}
 %===============================================
 
-\begin{frame}{Key Findings}
-    \begin{table}
-        \centering
-        \begin{tabular}{ll}
-            \toprule
-            \textbf{Finding} & \textbf{Evidence} \\
-            \midrule
-            TabDDPM achieves highest utility & 87--98\% vs 35\% (CTGAN) \\
-            Generalizes across datasets & Ozel: 87\%, Production: 98\% \\
-            Diffusion is privacy-safe & MIA AUC = 0.51 (random guessing) \\
-            SMOGN fails on complex data & Negative R\textsuperscript{2} \\
-            TabDDPM improvements essential & 3.3$\times$ better than simple diffusion \\
-            \bottomrule
-        \end{tabular}
-    \end{table}
-
-    \vspace{0.5cm}
-    \begin{block}{Main Conclusion}
-        \centering
-        \textbf{Diffusion models are superior for privacy-preserving\\synthetic tabular data generation}
-    \end{block}
-\end{frame}
-
-\begin{frame}{Limitations \& Future Work}
+\begin{frame}{Conclusion \& Future Work}
     \begin{columns}
-        \column{0.5\textwidth}
-        \textbf{Limitations:}
+        \column{0.55\textwidth}
+        \textbf{Key Findings:}
         \begin{itemize}
-            \item Evaluated on 2 organizational datasets (not public benchmarks)
-            \item CTGAN used default hyperparameters
-            \item Basic MIA (no shadow models)
-            \item Slower generation than GANs
+            \item TabDDPM: \textbf{87--98\%} utility vs 35\% (CTGAN)
+            \item Privacy-safe: MIA AUC = 0.51 (random guessing)
+            \item SMOGN fails on complex tabular data
+            \item Generalizes across different datasets
         \end{itemize}
 
-        \column{0.5\textwidth}
+        \vspace{0.3cm}
+        \begin{block}{Main Conclusion}
+            \centering
+            Diffusion models are superior for\\privacy-preserving synthetic data
+        \end{block}
+
+        \column{0.45\textwidth}
+        \textbf{Limitations:}
+        \begin{itemize}
+            \item 2 organizational datasets
+            \item Basic privacy evaluation
+        \end{itemize}
+
+        \vspace{0.2cm}
         \textbf{Future Work:}
         \begin{itemize}
             \item TabSyn (latent diffusion)
-            \item Differential privacy integration
-            \item Standard benchmarks (Adult, Covertype)
-            \item Web interface for practitioners
-            \item Conditional generation
+            \item Differential privacy
+            \item Public benchmarks
+        \end{itemize}
+
+        \vspace{0.2cm}
+        \textbf{Applications:}
+        \begin{itemize}
+            \item Safe data sharing
+            \item GDPR/KVKK compliance
         \end{itemize}
     \end{columns}
-
-    \vspace{0.5cm}
-    \textbf{Practical applications:}
-    \begin{enumerate}
-        \item Share data safely with partners (87--98\% utility)
-        \item Enable ML collaboration without exposing real records
-        \item Comply with privacy regulations (GDPR, KVKK)
-    \end{enumerate}
 \end{frame}
 
 \begin{frame}{}
