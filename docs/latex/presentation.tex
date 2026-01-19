@@ -94,6 +94,8 @@
 %===============================================
 
 \begin{frame}{Abstract}
+    \hspace{0.03\textwidth}
+    \begin{minipage}{0.90\textwidth}
     \begin{block}{Research Summary}
         This project investigates \textbf{diffusion models} as a privacy-preserving approach for generating synthetic tabular data.
     \end{block}
@@ -114,6 +116,7 @@
 
     \vspace{0.3cm}
     \textbf{Conclusion:} Diffusion models are superior for generating high-utility, privacy-preserving synthetic tabular data.
+    \end{minipage}
 \end{frame}
 
 %===============================================
@@ -122,7 +125,8 @@
 
 \begin{frame}{Motivation \& Problem Definition}
     \begin{columns}
-        \column{0.5\textwidth}
+        \column{0.03\textwidth}
+        \column{0.47\textwidth}
         \textbf{The Challenge:}
         \begin{itemize}
             \item Organizations need to share data for ML collaboration
@@ -135,7 +139,8 @@
             Do diffusion models produce more realistic synthetic tabular data than traditional methods?
         \end{block}
 
-        \column{0.5\textwidth}
+        \column{0.04\textwidth}
+        \column{0.46\textwidth}
         \centering
         \textbf{Solution: Synthetic Data}
 
@@ -168,7 +173,8 @@
 
     \vspace{0.3cm}
     \begin{columns}[t]
-        \column{0.5\textwidth}
+        \column{0.03\textwidth}
+        \column{0.45\textwidth}
         \textbf{Key innovations:}
         \begin{itemize}
             \item Hybrid noise handling
@@ -178,7 +184,8 @@
             \item KL divergence loss
         \end{itemize}
 
-        \column{0.5\textwidth}
+        \column{0.04\textwidth}
+        \column{0.45\textwidth}
         \textbf{Methods compared:}
         \begin{itemize}
             \item \textbf{TabDDPM-style} (ours)
@@ -200,6 +207,8 @@
 %===============================================
 
 \begin{frame}{Related Research}
+    \hspace{0.03\textwidth}
+    \begin{minipage}{0.90\textwidth}
     \begin{table}
         \centering
         \small
@@ -225,6 +234,7 @@
 
     \vspace{0.3cm}
     \textbf{Our contribution:} Implement and evaluate TabDDPM-style diffusion on real organizational datasets with privacy validation.
+    \end{minipage}
 \end{frame}
 
 %===============================================
@@ -233,7 +243,8 @@
 
 \begin{frame}{Solution: TabDDPM Diffusion Model}
     \begin{columns}
-        \column{0.5\textwidth}
+        \column{0.03\textwidth}
+        \column{0.47\textwidth}
         \textbf{How Diffusion Works:}
         \begin{itemize}
             \item \textbf{Forward}: Gradually add noise ($T$=1000 steps)
@@ -249,7 +260,8 @@
             \item Process both simultaneously
         \end{itemize}
 
-        \column{0.5\textwidth}
+        \column{0.04\textwidth}
+        \column{0.46\textwidth}
         \centering
         \includegraphics[width=0.95\textwidth]{fig6_diffusion_process.png}
 
@@ -258,9 +270,12 @@
     \end{columns}
 
     \vspace{0.3cm}
+    \hspace{0.03\textwidth}
+    \begin{minipage}{0.92\textwidth}
     \begin{block}{Key Advantage}
         Stable training + captures full distribution (no mode collapse like GANs)
     \end{block}
+    \end{minipage}
 \end{frame}
 
 %===============================================
@@ -268,6 +283,8 @@
 %===============================================
 
 \begin{frame}{Datasets \& Experimental Setup}
+    \hspace{0.03\textwidth}
+    \begin{minipage}{0.90\textwidth}
     \textbf{Two real-world organizational datasets (Turkish fastener company):}
 
     \vspace{0.3cm}
@@ -292,11 +309,13 @@
 
     \vspace{0.3cm}
     \textbf{Metrics:} R\textsuperscript{2} score (utility), MIA AUC (privacy)
+    \end{minipage}
 \end{frame}
 
 \begin{frame}{Results: Utility Comparison}
     \begin{columns}
-        \column{0.5\textwidth}
+        \column{0.03\textwidth}
+        \column{0.47\textwidth}
         \textbf{Ozel Rich Dataset} (Replacement scenario)
         \begin{table}
             \centering
@@ -329,7 +348,8 @@
             \end{tabular}
         \end{table}
 
-        \column{0.5\textwidth}
+        \column{0.04\textwidth}
+        \column{0.46\textwidth}
         \centering
         \includegraphics[width=0.95\textwidth]{fig4_method_summary.png}
 
@@ -344,6 +364,8 @@
 \end{frame}
 
 \begin{frame}{Results: Privacy Evaluation}
+    \hspace{0.03\textwidth}
+    \begin{minipage}{0.92\textwidth}
     \textbf{Membership Inference Attack: Can attacker identify training records?}
 
     \vspace{0.3cm}
@@ -377,6 +399,7 @@
     \begin{block}{Key Result}
         TabDDPM: \textbf{Highest utility} (87--98\%) + \textbf{Excellent privacy} (AUC = 0.51)
     \end{block}
+    \end{minipage}
 \end{frame}
 
 %===============================================
@@ -385,7 +408,8 @@
 
 \begin{frame}{Conclusion \& Future Work}
     \begin{columns}
-        \column{0.55\textwidth}
+        \column{0.03\textwidth}
+        \column{0.50\textwidth}
         \textbf{Key Findings:}
         \begin{itemize}
             \item TabDDPM: \textbf{87--98\%} utility vs 35\% (CTGAN)
@@ -400,7 +424,8 @@
             Diffusion models are superior for\\privacy-preserving synthetic data
         \end{block}
 
-        \column{0.45\textwidth}
+        \column{0.06\textwidth}
+        \column{0.41\textwidth}
         \textbf{Limitations:}
         \begin{itemize}
             \item 2 organizational datasets
