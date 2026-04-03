@@ -1,0 +1,145 @@
+{
+  "dataset": "iris",
+  "dataset_info": {
+    "name": "Iris",
+    "id": "D1",
+    "task": "classification",
+    "n_train": 120,
+    "n_test": 30,
+    "d_numerical": 4,
+    "d_categorical": 0,
+    "d_onehot": 0,
+    "total_dims": 4
+  },
+  "method": "smogn",
+  "preprocessing": {
+    "scaler": "minmax",
+    "outlier_clip": true
+  },
+  "utility": {
+    "task_type": "classification",
+    "primary_metric": "accuracy",
+    "baseline": {
+      "RandomForest": {
+        "accuracy": 0.9,
+        "f1_macro": 0.899749373433584
+      },
+      "GradientBoosting": {
+        "accuracy": 0.9,
+        "f1_macro": 0.899749373433584
+      },
+      "LogisticRegression": {
+        "accuracy": 0.9333333333333333,
+        "f1_macro": 0.9333333333333332
+      }
+    },
+    "replacement": {
+      "RandomForest": {
+        "accuracy": 0.9333333333333333,
+        "f1_macro": 0.9333333333333332
+      },
+      "GradientBoosting": {
+        "accuracy": 0.9333333333333333,
+        "f1_macro": 0.9333333333333332
+      },
+      "LogisticRegression": {
+        "accuracy": 0.9,
+        "f1_macro": 0.899749373433584
+      }
+    },
+    "augmentation": {
+      "RandomForest": {
+        "accuracy": 0.9,
+        "f1_macro": 0.899749373433584
+      },
+      "GradientBoosting": {
+        "accuracy": 0.9333333333333333,
+        "f1_macro": 0.9333333333333332
+      },
+      "LogisticRegression": {
+        "accuracy": 0.9333333333333333,
+        "f1_macro": 0.9333333333333332
+      }
+    },
+    "summary": {
+      "baseline": {
+        "avg_accuracy": 0.9111111111111111
+      },
+      "replacement": {
+        "avg_accuracy": 0.9222222222222222,
+        "pct_of_baseline": 101.21951219512195
+      },
+      "augmentation": {
+        "avg_accuracy": 0.9222222222222222,
+        "pct_of_baseline": 101.21951219512195
+      }
+    }
+  },
+  "fidelity": {
+    "numerical": {
+      "wasserstein": [
+        0.04227893967181445,
+        0.08493519073041776,
+        0.020778204558882844,
+        0.03194999467038239
+      ],
+      "ks_test": [
+        {
+          "statistic": 0.09166666666666666,
+          "p_value": 0.6966800040199376
+        },
+        {
+          "statistic": 0.16666666666666666,
+          "p_value": 0.07123408927610746
+        },
+        {
+          "statistic": 0.06666666666666667,
+          "p_value": 0.9538360034954086
+        },
+        {
+          "statistic": 0.11666666666666667,
+          "p_value": 0.3889566002413223
+        }
+      ],
+      "jensen_shannon_divergence": [
+        0.13163928346094914,
+        0.07743522693926806,
+        0.04933226338345475,
+        0.07568299199504055
+      ],
+      "mean_diff": [
+        0.002537548542022705,
+        0.0833279937505722,
+        0.0039615631103515625,
+        0.005179800093173981
+      ],
+      "std_diff": [
+        0.02622777223587036,
+        0.016625434160232544,
+        0.00022351741790771484,
+        0.022531092166900635
+      ],
+      "correlation_frobenius_norm": 0.2211395017081655,
+      "n_columns": 4,
+      "avg_wasserstein": 0.04498558240787437,
+      "avg_jsd": 0.08352244144467813,
+      "avg_ks_statistic": 0.11041666666666666,
+      "pct_ks_pass_005": 100.0,
+      "column_names": [
+        "sepal length (cm)",
+        "sepal width (cm)",
+        "petal length (cm)",
+        "petal width (cm)"
+      ]
+    },
+    "summary": {
+      "avg_wasserstein": 0.04498558240787437,
+      "avg_jsd": 0.08352244144467813,
+      "correlation_frobenius": 0.2211395017081655
+    }
+  },
+  "timing": {
+    "training_seconds": 0.001634836196899414
+  },
+  "extra": {}
+}
