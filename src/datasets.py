@@ -124,6 +124,15 @@ DATASET_REGISTRY = {
         "domain": "Census",
         "description": "6 num + 8 cat features, 48842 samples",
     },
+    "ames": {
+        "id": "D11",
+        "name": "Ames Housing",
+        "source": "openml",
+        "openml_name": "house_prices",
+        "task": "regression",
+        "domain": "Real Estate",
+        "description": "~34 num + ~46 cat features, 2930 samples, ~250 one-hot dims",
+    },
 }
 
 
@@ -394,6 +403,67 @@ def _load_adult_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
     return df, target, num_cols, cat_cols
 
 
+def _load_ames_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
+    """Ames Housing dataset — original with string categoricals."""
+    dataset_dir = _ensure_dir(DATA_DIR / "ames")
+    csv_path = dataset_dir / "ames.csv"
+
+    if not csv_path.exists():
+        import urllib.request
+        # Original De Cock dataset with string categoricals (not pre-encoded)
+        url = "https://raw.githubusercontent.com/STATCowboy/pbidataflowstalk/master/AmesHousing.csv"
+        print(f"Downloading Ames Housing dataset to {csv_path}...")
+        try:
+            urllib.request.urlretrieve(url, csv_path)
+        except Exception:
+            # Fallback: use OpenML but force categorical detection
+            from sklearn.datasets import fetch_openml
+            data = fetch_openml("house_prices", version=1, as_frame=True, parser="auto")
+            data.frame.to_csv(csv_path, index=False)
+
+    df = pd.read_csv(csv_path)
+
+    # Find target column
+    target_candidates = ["SalePrice", "Sale Price", "saleprice"]
+    target = None
+    for tc in target_candidates:
+        matches = [c for c in df.columns if c.replace(" ", "") == tc.replace(" ", "")]
+        if matches:
+            target = matches[0]
+            break
+    if target is None:
+        # Last numeric column as fallback
+        num_candidates = df.select_dtypes(include=[np.number]).columns
+        target = num_candidates[-1]
+
+    # Drop ID-like columns
+    drop_patterns = ["Order", "PID", "Id"]
+    df = df.drop(columns=[c for c in df.columns if c in drop_patterns], errors="ignore")
+
+    # Known categorical columns in Ames Housing
+    # These are the string-type columns plus ordinal integer columns
+    known_ordinal = [
+        "MS SubClass", "MSSubClass", "Overall Qual", "OverallQual",
+        "Overall Cond", "OverallCond", "Mo Sold", "MoSold",
+    ]
+
+    cat_cols = []
+    num_cols = []
+    for c in df.columns:
+        if c == target:
+            continue
+        # Check for string/object/category dtype (pandas 2.0+ uses StringDtype)
+        is_string = df[c].dtype == object or df[c].dtype.name in ("str", "string", "category")
+        if is_string:
+            cat_cols.append(c)
+        elif c in known_ordinal or c.replace(" ", "") in [k.replace(" ", "") for k in known_ordinal]:
+            cat_cols.append(c)
+        else:
+            num_cols.append(c)
+
+    return df, target, num_cols, cat_cols
+
+
 # Loader dispatch
 _LOADERS = {
     "iris": _load_iris_raw,
@@ -406,6 +476,7 @@ _LOADERS = {
     "supply_chain": _load_supply_chain_raw,
     "news": _load_news_raw,
     "adult": _load_adult_raw,
+    "ames": _load_ames_raw,
 }
 
 
@@ -460,10 +531,8 @@ def preprocess_dataset(
             df[c] = df[c].fillna(df[c].median())
     for c in cat_cols:
         if c in df.columns:
-            # Convert categorical dtype to string first to avoid setitem errors
-            if hasattr(df[c], "cat"):
-                df[c] = df[c].astype(str)
-            df[c] = df[c].fillna("_missing_").astype(str)
+            # Convert any special dtype (categorical, StringDtype) to plain str
+            df[c] = df[c].astype(str).fillna("_missing_")
 
     # Filter to only existing columns
     num_cols = [c for c in num_cols if c in df.columns]
