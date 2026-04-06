@@ -30,12 +30,8 @@ from sklearn.model_selection import cross_val_score
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from datasets import load_dataset, DATASET_REGISTRY
-from run_experiment import (
-    train_tabddpm, generate_tabddpm,
-    run_ctgan, run_smogn,
-    _prepare_features, _simple_oversample, _noise_augmentation,
-)
+# NOTE: imports from run_experiment are done lazily in run_privacy_analysis()
+# to avoid circular imports (run_experiment imports membership_inference_attack from here)
 
 RESULTS_DIR = Path(__file__).parent.parent / "experiments" / "phase2"
 
@@ -116,6 +112,14 @@ def run_privacy_analysis(
     methods: list = None,
 ) -> dict:
     """Run privacy analysis for all methods on one dataset."""
+    # Lazy imports to avoid circular dependency with run_experiment
+    from datasets import load_dataset, DATASET_REGISTRY
+    from run_experiment import (
+        train_tabddpm, generate_tabddpm,
+        run_ctgan, run_smogn,
+        _prepare_features,
+    )
+
     if methods is None:
         methods = ["our_tabddpm", "smogn", "ctgan"]
 
@@ -258,6 +262,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     methods = args.methods.split(",")
+
+    from datasets import DATASET_REGISTRY
 
     if args.dataset == "key":
         # Run on key datasets that tell the privacy story
