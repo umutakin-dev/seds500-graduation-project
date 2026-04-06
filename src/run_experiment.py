@@ -41,6 +41,22 @@ from privacy_analysis import membership_inference_attack
 RESULTS_DIR = Path(__file__).parent.parent / "experiments" / "phase2"
 
 
+def is_experiment_complete(dataset_name: str, method: str) -> bool:
+    """Check if an experiment already completed with privacy results."""
+    result_path = RESULTS_DIR / f"{dataset_name}_{method}" / "RESULTS.json"
+    if not result_path.exists():
+        return False
+    try:
+        with open(result_path) as f:
+            data = json.load(f)
+        # Must have privacy field with a valid AUC
+        privacy = data.get("privacy", {})
+        auc = privacy.get("attack_auc")
+        return auc is not None
+    except Exception:
+        return False
+
+
 # =============================================================================
 # TabDDPM Training & Generation
 # =============================================================================
