@@ -36,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from datasets import load_dataset, DATASET_REGISTRY
 from evaluation_framework import evaluate_synthetic_data, format_results_table
 from distribution_metrics import compute_fidelity_metrics, format_fidelity_table
+from privacy_analysis import membership_inference_attack
 
 RESULTS_DIR = Path(__file__).parent.parent / "experiments" / "phase2"
 
@@ -468,6 +469,15 @@ def run_single_experiment(
         cat_col_names=data["cat_cols"],
     )
 
+    # --- Privacy evaluation (membership inference attack) ---
+    print("  Running privacy test (membership inference)...")
+    try:
+        privacy = membership_inference_attack(X_real_train, X_real_test, X_syn)
+        print(f"  Privacy AUC={privacy['attack_auc']:.4f} — {privacy['interpretation']}")
+    except Exception as e:
+        print(f"  Privacy test failed: {e}")
+        privacy = {"attack_auc": None, "interpretation": f"error: {e}"}
+
     # --- Compile results ---
     results = {
         "dataset": dataset_name,
@@ -486,6 +496,7 @@ def run_single_experiment(
         "preprocessing": {"scaler": scaler_type, "outlier_clip": outlier_clip},
         "utility": utility,
         "fidelity": fidelity,
+        "privacy": privacy,
         "timing": {"training_seconds": training_time},
         "extra": extra_info,
     }
@@ -521,6 +532,17 @@ def _save_results(results: dict):
         f.write(format_results_table(results["utility"]))
         f.write("\n\n## Fidelity\n")
         f.write(format_fidelity_table(results["fidelity"]))
+        f.write("\n\n## Privacy (Membership Inference Attack)\n")
+        privacy = results.get("privacy", {})
+        auc = privacy.get("attack_auc")
+        if auc is not None:
+            f.write(f"| Metric | Value |\n| --- | --- |\n")
+            f.write(f"| Attack AUC | **{auc:.4f}** |\n")
+            f.write(f"| Interpretation | {privacy.get('interpretation', 'N/A')} |\n")
+            f.write(f"| Distance Ratio (train/test) | {privacy.get('dist_ratio', 'N/A'):.4f} |\n")
+            f.write(f"\n*AUC ~0.50 = safe (random guessing), >0.60 = privacy concern, >0.80 = critical leak*\n")
+        else:
+            f.write(f"Privacy test not available.\n")
         f.write("\n")
 
     print(f"  Results saved to {out_dir}/")

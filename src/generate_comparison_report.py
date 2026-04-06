@@ -35,7 +35,7 @@ PHASE2_DIR = Path(__file__).parent.parent / "experiments" / "phase2"
 # Ordered by dimensionality for scaling analysis
 DATASET_ORDER = [
     "iris", "california", "insurance", "maintenance",
-    "steel", "bank", "credit", "supply_chain", "news", "adult",
+    "steel", "bank", "credit", "supply_chain", "news", "adult", "ames",
 ]
 
 METHOD_ORDER = ["our_tabddpm", "vanilla_tabddpm", "ctgan", "smogn"]
@@ -58,6 +58,7 @@ DATASET_LABELS = {
     "supply_chain": "Supply Chain",
     "news": "News",
     "adult": "Adult",
+    "ames": "Ames Housing",
 }
 
 
@@ -143,6 +144,27 @@ def build_fidelity_table(
                 val = summary.get(metric)
                 if val is not None and not np.isinf(val) and abs(val) < 1e6:
                     table[method][ds] = float(val)
+                else:
+                    table[method][ds] = None
+            else:
+                table[method][ds] = None
+    return table
+
+
+def build_privacy_table(
+    results: dict,
+    datasets: List[str],
+) -> Dict[str, Dict[str, Optional[float]]]:
+    """Build method x dataset table for privacy AUC."""
+    table = {}
+    for method in METHOD_ORDER:
+        table[method] = {}
+        for ds in datasets:
+            r = get_result(results, ds, method)
+            if r and "privacy" in r:
+                auc = r["privacy"].get("attack_auc")
+                if auc is not None:
+                    table[method][ds] = float(auc)
                 else:
                     table[method][ds] = None
             else:
@@ -495,6 +517,7 @@ def generate_report(output_path: Optional[Path] = None):
     repl_table = build_utility_table(results, datasets, "replacement")
     aug_table = build_utility_table(results, datasets, "augmentation")
     fidelity_table = build_fidelity_table(results, datasets, "avg_wasserstein")
+    privacy_table = build_privacy_table(results, datasets)
 
     # Generate figures
     fig_dir = PHASE2_DIR / "figures"
@@ -594,6 +617,34 @@ def generate_report(output_path: Optional[Path] = None):
                 else:
                     f.write(" — |")
             f.write("\n")
+        f.write("\n---\n\n")
+
+        # Privacy table
+        f.write("## Privacy (Membership Inference Attack AUC)\n")
+        f.write("*AUC ~0.50 = safe (random guessing). AUC > 0.60 = privacy concern. AUC > 0.80 = critical leak (data is just copies).*\n\n")
+        f.write("| Method |")
+        for ds in datasets:
+            f.write(f" {DATASET_LABELS.get(ds, ds)} |")
+        f.write(" **Avg** |\n| --- |")
+        for _ in datasets:
+            f.write(" --- |")
+        f.write(" --- |\n")
+        for method in METHOD_ORDER:
+            f.write(f"| **{METHOD_LABELS[method]}** |")
+            vals = []
+            for ds in datasets:
+                val = privacy_table[method].get(ds)
+                if val is not None:
+                    # Color-code: bold if unsafe
+                    if val > 0.60:
+                        f.write(f" **{val:.4f}** |")
+                    else:
+                        f.write(f" {val:.4f} |")
+                    vals.append(val)
+                else:
+                    f.write(" — |")
+            avg = np.mean(vals) if vals else 0
+            f.write(f" **{avg:.4f}** |\n")
         f.write("\n---\n\n")
 
         # Figures
