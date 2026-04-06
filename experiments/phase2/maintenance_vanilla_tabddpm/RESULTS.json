@@ -1,0 +1,179 @@
+{
+  "dataset": "maintenance",
+  "dataset_info": {
+    "name": "AI4I Predictive Maintenance",
+    "id": "D4",
+    "task": "classification",
+    "n_train": 8000,
+    "n_test": 2000,
+    "d_numerical": 5,
+    "d_categorical": 6,
+    "d_onehot": 13,
+    "total_dims": 18
+  },
+  "method": "vanilla_tabddpm",
+  "preprocessing": {
+    "scaler": "quantile",
+    "outlier_clip": false
+  },
+  "utility": {
+    "task_type": "classification",
+    "primary_metric": "accuracy",
+    "baseline": {
+      "RandomForest": {
+        "accuracy": 0.999,
+        "f1_macro": 0.9922786481457173
+      },
+      "GradientBoosting": {
+        "accuracy": 0.999,
+        "f1_macro": 0.9922786481457173
+      },
+      "LogisticRegression": {
+        "accuracy": 0.999,
+        "f1_macro": 0.9922786481457173
+      }
+    },
+    "replacement": {
+      "RandomForest": {
+        "accuracy": 0.994,
+        "f1_macro": 0.9500649156097074
+      },
+      "GradientBoosting": {
+        "accuracy": 0.995,
+        "f1_macro": 0.9590268046643886
+      },
+      "LogisticRegression": {
+        "accuracy": 0.979,
+        "f1_macro": 0.7712194005948296
+      }
+    },
+    "augmentation": {
+      "RandomForest": {
+        "accuracy": 0.999,
+        "f1_macro": 0.9922786481457173
+      },
+      "GradientBoosting": {
+        "accuracy": 0.999,
+        "f1_macro": 0.9922786481457173
+      },
+      "LogisticRegression": {
+        "accuracy": 0.992,
+        "f1_macro": 0.9312714776632303
+      }
+    },
+    "summary": {
+      "baseline": {
+        "avg_accuracy": 0.999
+      },
+      "replacement": {
+        "avg_accuracy": 0.9893333333333333,
+        "pct_of_baseline": 99.03236569903237
+      },
+      "augmentation": {
+        "avg_accuracy": 0.9966666666666667,
+        "pct_of_baseline": 99.76643309976645
+      }
+    }
+  },
+  "fidelity": {
+    "numerical": {
+      "wasserstein": [
+        0.9970898386641878,
+        4.784382361610234,
+        3.458400652364515,
+        8.741744809581684,
+        120.2630308426695
+      ],
+      "ks_test": [
+        {
+          "statistic": 0.07825,
+          "p_value": 1.0160198814411905e-21
+        },
+        {
+          "statistic": 0.085375,
+          "p_value": 8.862666353416986e-26
+        },
+        {
+          "statistic": 0.0595,
+          "p_value": 9.872881059260096e-13
+        },
+        {
+          "statistic": 0.08175,
+          "p_value": 1.1408185845492535e-23
+        },
+        {
+          "statistic": 0.097875,
+          "p_value": 9.271086353519143e-34
+        }
+      ],
+      "jensen_shannon_divergence": [
+        0.016342618256734765,
+        0.008302085061385633,
+        0.008963790144191047,
+        0.00830177234823604,
+        0.007942435528398076
+      ],
+      "mean_diff": [
+        0.7731316685676575,
+        4.640522480010986,
+        3.243915319442749,
+        8.596271514892578,
+        119.83830261230469
+      ],
+      "std_diff": [
+        6.161586761474609,
+        40.9951057434082,
+        29.377456665039062,
+        76.53617858886719,
+        1086.996337890625
+      ],
+      "correlation_frobenius_norm": 5.469259858829576,
+      "n_columns": 5,
+      "avg_wasserstein": 27.648929700978023,
+      "avg_jsd": 0.00997054026778911,
+      "avg_ks_statistic": 0.08055,
+      "pct_ks_pass_005": 0.0,
+      "column_names": [
+        "Air temperature",
+        "Process temperature",
+        "Rotational speed",
+        "Torque",
+        "Tool wear"
+      ]
+    },
+    "categorical": {
+      "frequency_l1_diff": [
+        0.01525,
+        0.0027500000000000155,
+        0.0009999999999999454,
+        0.0010000000000000547,
+        0.01100000000000006,
+        0.003000000000000057
+      ],
+      "avg_frequency_l1_diff": 0.005666666666666689,
+      "n_columns": 6,
+      "column_names": [
+        "Type",
+        "TWF",
+        "HDF",
+        "PWF",
+        "OSF",
+        "RNF"
+      ]
+    },
+    "summary": {
+      "avg_wasserstein": 27.648929700978023,
+      "avg_jsd": 0.00997054026778911,
+      "correlation_frobenius": 5.469259858829576,
+      "avg_cat_freq_diff": 0.005666666666666689
+    }
+  },
+  "timing": {
+    "training_seconds": 639.1065182685852
+  },
+  "extra": {
+    "epochs": 750,
+    "best_loss": 0.421722239918179,
+    "used_dummy_cat": false
+  }
+}

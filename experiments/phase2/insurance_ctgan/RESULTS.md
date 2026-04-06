@@ -1,11 +1,11 @@
-# our_tabddpm on Insurance Charges
+# ctgan on Insurance Charges
 
 **Dataset:** Insurance Charges (D3)
 **Task:** regression
 **Dimensions:** 3 num + 3 cat = 11 total
 **Samples:** 1070 train / 268 test
 **Preprocessing:** minmax, clip=True
-**Training time:** 93.4s
+**Training time:** 27.9s
 
 ## Utility
 
@@ -19,32 +19,32 @@
 ### Replacement
 | Model | R² | RMSE |
 | --- | --- | --- |
-| RandomForest | 0.7473 | 6263.5070 |
-| GradientBoosting | 0.7879 | 5738.5378 |
-| Ridge | 0.7388 | 6367.7431 |
+| RandomForest | 0.3615 | 9956.1150 |
+| GradientBoosting | 0.3140 | 10319.5989 |
+| Ridge | 0.4490 | 9248.4909 |
 
 ### Augmentation
 | Model | R² | RMSE |
 | --- | --- | --- |
-| RandomForest | 0.8591 | 4676.6770 |
-| GradientBoosting | 0.8676 | 4534.4584 |
-| Ridge | 0.7696 | 5981.3219 |
+| RandomForest | 0.8219 | 5258.4987 |
+| GradientBoosting | 0.7918 | 5685.0381 |
+| Ridge | 0.6741 | 7113.1534 |
 
 ### Summary
 | Scenario | Avg R2 | % of Baseline |
 | --- | --- | --- |
 | Baseline | 0.8418 | 100.0% |
-| Replacement | 0.7580 | 90.0% |
-| Augmentation | 0.8321 | 98.8% |
+| Replacement | 0.3749 | 44.5% |
+| Augmentation | 0.7626 | 90.6% |
 
 ## Fidelity
 ### Statistical Fidelity Summary
 | Metric | Value |
 | --- | --- |
-| avg_wasserstein | 0.0920 |
-| avg_jsd | 0.1895 |
-| correlation_frobenius | 0.0978 |
-| avg_cat_freq_diff | 0.0312 |
+| avg_wasserstein | 0.1535 |
+| avg_jsd | 0.1826 |
+| correlation_frobenius | 0.2924 |
+| avg_cat_freq_diff | 0.0773 |
 
-**Numerical:** 3 columns, avg Wasserstein=0.0920, avg JSD=0.1895, KS pass rate (p>0.05)=33%
-**Categorical:** 3 columns, avg freq L1 diff=0.0312
+**Numerical:** 3 columns, avg Wasserstein=0.1535, avg JSD=0.1826, KS pass rate (p>0.05)=0%
+**Categorical:** 3 columns, avg freq L1 diff=0.0773

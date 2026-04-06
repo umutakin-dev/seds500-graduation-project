@@ -1,0 +1,155 @@
+{
+  "dataset": "insurance",
+  "dataset_info": {
+    "name": "Insurance Charges",
+    "id": "D3",
+    "task": "regression",
+    "n_train": 1070,
+    "n_test": 268,
+    "d_numerical": 3,
+    "d_categorical": 3,
+    "d_onehot": 8,
+    "total_dims": 11
+  },
+  "method": "vanilla_tabddpm",
+  "preprocessing": {
+    "scaler": "quantile",
+    "outlier_clip": false
+  },
+  "utility": {
+    "task_type": "regression",
+    "primary_metric": "r2",
+    "baseline": {
+      "RandomForest": {
+        "r2": 0.8608164282960513,
+        "rmse": 4648.448428689584
+      },
+      "GradientBoosting": {
+        "r2": 0.8789399394817652,
+        "rmse": 4335.253244381009
+      },
+      "Ridge": {
+        "r2": 0.7748029828071594,
+        "rmse": 5912.829441138988
+      }
+    },
+    "replacement": {
+      "RandomForest": {
+        "r2": 0.7975994982296093,
+        "rmse": 5605.570526212281
+      },
+      "GradientBoosting": {
+        "r2": 0.8021422330949795,
+        "rmse": 5542.30702001641
+      },
+      "Ridge": {
+        "r2": 0.7455408573150635,
+        "rmse": 6285.25671711188
+      }
+    },
+    "augmentation": {
+      "RandomForest": {
+        "r2": 0.8632993682090548,
+        "rmse": 4606.799271200071
+      },
+      "GradientBoosting": {
+        "r2": 0.8616676813802755,
+        "rmse": 4634.211565481742
+      },
+      "Ridge": {
+        "r2": 0.7650402784347534,
+        "rmse": 6039.63541946035
+      }
+    },
+    "summary": {
+      "baseline": {
+        "avg_r2": 0.8381864501949919
+      },
+      "replacement": {
+        "avg_r2": 0.7817608628798841,
+        "pct_of_baseline": 93.26813416012854
+      },
+      "augmentation": {
+        "avg_r2": 0.8300024426746946,
+        "pct_of_baseline": 99.02360536627698
+      }
+    }
+  },
+  "fidelity": {
+    "numerical": {
+      "wasserstein": [
+        0.6097259683503494,
+        0.3157905768929485,
+        2.3076133431483785
+      ],
+      "ks_test": [
+        {
+          "statistic": 0.14485981308411214,
+          "p_value": 3.3106117291622756e-10
+        },
+        {
+          "statistic": 0.12149532710280374,
+          "p_value": 2.678334499658601e-07
+        },
+        {
+          "statistic": 0.49626168224299066,
+          "p_value": 4.8620456186903875e-120
+        }
+      ],
+      "jensen_shannon_divergence": [
+        0.11293988650598004,
+        0.028770037826202865,
+        0.4311425965242403
+      ],
+      "mean_diff": [
+        0.046916209161281586,
+        0.1707466095685959,
+        2.240180015563965
+      ],
+      "std_diff": [
+        0.8213188052177429,
+        0.33926522731781006,
+        1.0457179546356201
+      ],
+      "correlation_frobenius_norm": 0.16601633026168833,
+      "n_columns": 3,
+      "avg_wasserstein": 1.0777099627972255,
+      "avg_jsd": 0.1909508402854744,
+      "avg_ks_statistic": 0.2542056074766355,
+      "pct_ks_pass_005": 0.0,
+      "column_names": [
+        "age",
+        "bmi",
+        "children"
+      ]
+    },
+    "categorical": {
+      "frequency_l1_diff": [
+        0.01682242990654209,
+        0.1757009345794393,
+        0.13457943925233648
+      ],
+      "avg_frequency_l1_diff": 0.10903426791277264,
+      "n_columns": 3,
+      "column_names": [
+        "sex",
+        "smoker",
+        "region"
+      ]
+    },
+    "summary": {
+      "avg_wasserstein": 1.0777099627972255,
+      "avg_jsd": 0.1909508402854744,
+      "correlation_frobenius": 0.16601633026168833,
+      "avg_cat_freq_diff": 0.10903426791277264
+    }
+  },
+  "timing": {
+    "training_seconds": 93.97156548500061
+  },
+  "extra": {
+    "epochs": 1000,
+    "best_loss": 0.40730961826112533,
+    "used_dummy_cat": false
+  }
+}

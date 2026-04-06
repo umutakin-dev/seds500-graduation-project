@@ -1,11 +1,11 @@
-# our_tabddpm on Insurance Charges
+# smogn on Insurance Charges
 
 **Dataset:** Insurance Charges (D3)
 **Task:** regression
 **Dimensions:** 3 num + 3 cat = 11 total
 **Samples:** 1070 train / 268 test
 **Preprocessing:** minmax, clip=True
-**Training time:** 93.4s
+**Training time:** 3.0s
 
 ## Utility
 
@@ -19,32 +19,32 @@
 ### Replacement
 | Model | R² | RMSE |
 | --- | --- | --- |
-| RandomForest | 0.7473 | 6263.5070 |
-| GradientBoosting | 0.7879 | 5738.5378 |
-| Ridge | 0.7388 | 6367.7431 |
+| RandomForest | 0.8800 | 4316.8187 |
+| GradientBoosting | 0.8817 | 4284.8160 |
+| Ridge | 0.7819 | 5818.3767 |
 
 ### Augmentation
 | Model | R² | RMSE |
 | --- | --- | --- |
-| RandomForest | 0.8591 | 4676.6770 |
-| GradientBoosting | 0.8676 | 4534.4584 |
-| Ridge | 0.7696 | 5981.3219 |
+| RandomForest | 0.8720 | 4457.3201 |
+| GradientBoosting | 0.8795 | 4325.7297 |
+| Ridge | 0.7822 | 5815.5725 |
 
 ### Summary
 | Scenario | Avg R2 | % of Baseline |
 | --- | --- | --- |
 | Baseline | 0.8418 | 100.0% |
-| Replacement | 0.7580 | 90.0% |
-| Augmentation | 0.8321 | 98.8% |
+| Replacement | 0.8479 | 100.7% |
+| Augmentation | 0.8445 | 100.3% |
 
 ## Fidelity
 ### Statistical Fidelity Summary
 | Metric | Value |
 | --- | --- |
-| avg_wasserstein | 0.0920 |
-| avg_jsd | 0.1895 |
-| correlation_frobenius | 0.0978 |
-| avg_cat_freq_diff | 0.0312 |
+| avg_wasserstein | 0.0208 |
+| avg_jsd | 0.1213 |
+| correlation_frobenius | 0.0121 |
+| avg_cat_freq_diff | 0.0000 |
 
-**Numerical:** 3 columns, avg Wasserstein=0.0920, avg JSD=0.1895, KS pass rate (p>0.05)=33%
-**Categorical:** 3 columns, avg freq L1 diff=0.0312
+**Numerical:** 3 columns, avg Wasserstein=0.0208, avg JSD=0.1213, KS pass rate (p>0.05)=67%
+**Categorical:** 3 columns, avg freq L1 diff=0.0000

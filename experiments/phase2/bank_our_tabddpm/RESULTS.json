@@ -1,0 +1,203 @@
+{
+  "dataset": "bank",
+  "dataset_info": {
+    "name": "Bank Marketing",
+    "id": "D6",
+    "task": "classification",
+    "n_train": 36168,
+    "n_test": 9043,
+    "d_numerical": 7,
+    "d_categorical": 9,
+    "d_onehot": 44,
+    "total_dims": 51
+  },
+  "method": "our_tabddpm",
+  "preprocessing": {
+    "scaler": "minmax",
+    "outlier_clip": true
+  },
+  "utility": {
+    "task_type": "classification",
+    "primary_metric": "accuracy",
+    "baseline": {
+      "RandomForest": {
+        "accuracy": 0.9048988167643481,
+        "f1_macro": 0.7211109345163778
+      },
+      "GradientBoosting": {
+        "accuracy": 0.9061152272475949,
+        "f1_macro": 0.7276847185315993
+      },
+      "LogisticRegression": {
+        "accuracy": 0.9016919163994249,
+        "f1_macro": 0.7046882999368215
+      }
+    },
+    "replacement": {
+      "RandomForest": {
+        "accuracy": 0.8929558774742895,
+        "f1_macro": 0.6167334514910996
+      },
+      "GradientBoosting": {
+        "accuracy": 0.8967156916952339,
+        "f1_macro": 0.6296973520054182
+      },
+      "LogisticRegression": {
+        "accuracy": 0.8978215194072764,
+        "f1_macro": 0.645096724013672
+      }
+    },
+    "augmentation": {
+      "RandomForest": {
+        "accuracy": 0.9040141545947141,
+        "f1_macro": 0.7054134729736181
+      },
+      "GradientBoosting": {
+        "accuracy": 0.9019130819418335,
+        "f1_macro": 0.6861328201043636
+      },
+      "LogisticRegression": {
+        "accuracy": 0.8994802609753401,
+        "f1_macro": 0.6756812643404474
+      }
+    },
+    "summary": {
+      "baseline": {
+        "avg_accuracy": 0.9042353201371226
+      },
+      "replacement": {
+        "avg_accuracy": 0.8958310295255999,
+        "pct_of_baseline": 99.07056377644614
+      },
+      "augmentation": {
+        "avg_accuracy": 0.9018024991706293,
+        "pct_of_baseline": 99.73095267212915
+      }
+    }
+  },
+  "fidelity": {
+    "numerical": {
+      "wasserstein": [
+        0.13217474003651247,
+        1.5271421184589613,
+        0.14007676988937606,
+        0.1787815402077365,
+        0.5369198191014076,
+        0.24564794679576252,
+        0.8883596619904446
+      ],
+      "ks_test": [
+        {
+          "statistic": 0.05391506303915061,
+          "p_value": 3.955027137352056e-46
+        },
+        {
+          "statistic": 0.09948020349480204,
+          "p_value": 3.0441091271740595e-156
+        },
+        {
+          "statistic": 0.0529473567794736,
+          "p_value": 1.674240660135771e-44
+        },
+        {
+          "statistic": 0.06326034063260341,
+          "p_value": 2.3324303454873176e-63
+        },
+        {
+          "statistic": 0.2117617783676178,
+          "p_value": 0.0
+        },
+        {
+          "statistic": 0.5080457863304578,
+          "p_value": 0.0
+        },
+        {
+          "statistic": 0.5428555629285556,
+          "p_value": 0.0
+        }
+      ],
+      "jensen_shannon_divergence": [
+        0.0048965775302831195,
+        0.006327213609944253,
+        0.005860592876760766,
+        0.00755427592244809,
+        0.00464089999892194,
+        0.0032715581794259367,
+        0.004292608288165514
+      ],
+      "mean_diff": [
+        0.1198321282863617,
+        1.5090160369873047,
+        0.0026352033019065857,
+        0.15500271320343018,
+        0.507697343826294,
+        0.22883141040802002,
+        0.8601575493812561
+      ],
+      "std_diff": [
+        1.0803847312927246,
+        16.471385955810547,
+        0.8742221593856812,
+        1.2460436820983887,
+        6.532137870788574,
+        3.0287654399871826,
+        11.82590389251709
+      ],
+      "correlation_frobenius_norm": 3.6558774571761985,
+      "n_columns": 7,
+      "avg_wasserstein": 0.521300370925743,
+      "avg_jsd": 0.005263389486564232,
+      "avg_ks_statistic": 0.21889515593895156,
+      "pct_ks_pass_005": 0.0,
+      "column_names": [
+        "age",
+        "balance",
+        "day_of_week",
+        "duration",
+        "campaign",
+        "pdays",
+        "previous"
+      ]
+    },
+    "categorical": {
+      "frequency_l1_diff": [
+        0.04473567794735678,
+        0.024828577748285757,
+        0.039205927892059234,
+        0.005032072550320756,
+        0.0107830126078301,
+        0.012718425127184185,
+        0.03273612032736123,
+        0.04882769298827695,
+        0.02278257022782572
+      ],
+      "avg_frequency_l1_diff": 0.02685000860183341,
+      "n_columns": 9,
+      "column_names": [
+        "job",
+        "marital",
+        "education",
+        "default",
+        "housing",
+        "loan",
+        "contact",
+        "month",
+        "poutcome"
+      ]
+    },
+    "summary": {
+      "avg_wasserstein": 0.521300370925743,
+      "avg_jsd": 0.005263389486564232,
+      "correlation_frobenius": 3.6558774571761985,
+      "avg_cat_freq_diff": 0.02685000860183341
+    }
+  },
+  "timing": {
+    "training_seconds": 2463.396928548813
+  },
+  "extra": {
+    "epochs": 500,
+    "best_loss": 0.19853740741001843,
+    "used_dummy_cat": false
+  }
+}
