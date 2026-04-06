@@ -1,27 +1,22 @@
 """
 Unified dataset loader for Phase 2 experiments.
 
-Loads 10 public datasets with standardized format:
-- Automatic download from sklearn/OpenML/UCI/Kaggle
-- Consistent train/test split (80/20, stratified for classification)
-- Column type identification (numerical vs categorical)
-- Preprocessing: MinMaxScaler for numerical, LabelEncoder for categorical
-- Saves/loads as .pt files for fast reuse
+Each dataset has an explicit configuration defining:
+- Which columns are numerical
+- Which columns are categorical
+- What the target is
+- Max cardinality caps where needed
+
+No heuristic-based column type detection. Every column assignment is intentional.
 
 Usage:
     from datasets import load_dataset, list_datasets
 
-    # List all available datasets
     list_datasets()
-
-    # Load a dataset
     data = load_dataset("insurance")
-    print(data["X_train"].shape, data["task_type"])
 """
 
 import os
-import json
-import hashlib
 import warnings
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
@@ -34,112 +29,6 @@ from sklearn.preprocessing import MinMaxScaler, QuantileTransformer, LabelEncode
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-# =============================================================================
-# Dataset Registry
-# =============================================================================
-
-DATASET_REGISTRY = {
-    "iris": {
-        "id": "D1",
-        "name": "Iris",
-        "source": "sklearn",
-        "task": "classification",
-        "domain": "Botany",
-        "description": "4 numeric features, 150 samples, 3 classes",
-    },
-    "california": {
-        "id": "D2",
-        "name": "California Housing",
-        "source": "sklearn",
-        "task": "regression",
-        "domain": "Real Estate",
-        "description": "8 numeric features, 20640 samples",
-    },
-    "insurance": {
-        "id": "D3",
-        "name": "Insurance Charges",
-        "source": "kaggle_csv",
-        "task": "regression",
-        "domain": "Healthcare",
-        "description": "4 num + 3 cat features, 1338 samples",
-    },
-    "maintenance": {
-        "id": "D4",
-        "name": "AI4I Predictive Maintenance",
-        "source": "uci",
-        "uci_id": 601,
-        "task": "classification",
-        "domain": "Manufacturing",
-        "description": "6 num + 3 cat features, 10000 samples",
-    },
-    "steel": {
-        "id": "D5",
-        "name": "Steel Plates Faults",
-        "source": "uci",
-        "uci_id": 198,
-        "task": "classification",
-        "domain": "Manufacturing",
-        "description": "27 num + 7 cat features, 1941 samples",
-    },
-    "bank": {
-        "id": "D6",
-        "name": "Bank Marketing",
-        "source": "uci",
-        "uci_id": 222,
-        "task": "classification",
-        "domain": "Finance",
-        "description": "7 num + 9 cat features, 45211 samples",
-    },
-    "credit": {
-        "id": "D7",
-        "name": "Credit Default",
-        "source": "uci",
-        "uci_id": 350,
-        "task": "classification",
-        "domain": "Finance",
-        "description": "14 num + 9 cat features, 30000 samples",
-    },
-    "supply_chain": {
-        "id": "D8",
-        "name": "Supply Chain Pricing",
-        "source": "kaggle_csv",
-        "task": "regression",
-        "domain": "Manufacturing",
-        "description": "6 num + 8 cat features, 10324 samples",
-    },
-    "news": {
-        "id": "D9",
-        "name": "Online News Popularity",
-        "source": "uci",
-        "uci_id": 332,
-        "task": "regression",
-        "domain": "Media",
-        "description": "58 num + 2 cat features, 39644 samples",
-    },
-    "adult": {
-        "id": "D10",
-        "name": "Adult",
-        "source": "openml",
-        "task": "classification",
-        "domain": "Census",
-        "description": "6 num + 8 cat features, 48842 samples",
-    },
-    "ames": {
-        "id": "D11",
-        "name": "Ames Housing",
-        "source": "openml",
-        "openml_name": "house_prices",
-        "task": "regression",
-        "domain": "Real Estate",
-        "description": "~34 num + ~46 cat features, 2930 samples, ~250 one-hot dims",
-    },
-}
-
-
-# =============================================================================
-# Data Directory
-# =============================================================================
-
 DATA_DIR = Path(__file__).parent.parent / "data"
 
 
@@ -149,335 +38,347 @@ def _ensure_dir(path: Path) -> Path:
 
 
 # =============================================================================
-# Individual Dataset Loaders (raw DataFrames)
+# Dataset Registry — explicit column configs
 # =============================================================================
 
-def _load_iris_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
-    """Returns (df, target_col, num_cols, cat_cols)."""
+DATASET_REGISTRY = {
+    "iris": {
+        "id": "D1",
+        "name": "Iris",
+        "task": "classification",
+        "domain": "Botany",
+        "description": "4 numeric, 150 samples, 3 classes",
+        "target": "target",
+        "num_cols": ["sepal length (cm)", "sepal width (cm)", "petal length (cm)", "petal width (cm)"],
+        "cat_cols": [],
+    },
+    "california": {
+        "id": "D2",
+        "name": "California Housing",
+        "task": "regression",
+        "domain": "Real Estate",
+        "description": "8 numeric, 20640 samples",
+        "target": "MedHouseVal",
+        "num_cols": ["MedInc", "HouseAge", "AveRooms", "AveBedrms", "Population", "AveOccup", "Latitude", "Longitude"],
+        "cat_cols": [],
+    },
+    "insurance": {
+        "id": "D3",
+        "name": "Insurance Charges",
+        "task": "regression",
+        "domain": "Healthcare",
+        "description": "3 num + 3 cat, 1338 samples",
+        "target": "charges",
+        "num_cols": ["age", "bmi", "children"],
+        "cat_cols": ["sex", "smoker", "region"],
+    },
+    "maintenance": {
+        "id": "D4",
+        "name": "AI4I Predictive Maintenance",
+        "task": "classification",
+        "domain": "Manufacturing",
+        "description": "5 num + 6 cat, 10000 samples",
+        "target": "Machine failure",
+        "num_cols": ["Air temperature", "Process temperature", "Rotational speed", "Torque", "Tool wear"],
+        "cat_cols": ["Type", "TWF", "HDF", "PWF", "OSF", "RNF"],
+        "drop_cols": ["UDI", "Product ID"],
+    },
+    "steel": {
+        "id": "D5",
+        "name": "Steel Plates Faults",
+        "task": "classification",
+        "domain": "Manufacturing",
+        "description": "24 num + 3 cat, 1941 samples",
+        "target": "fault_type",  # derived from 7 binary fault columns
+        "num_cols": [
+            "X_Minimum", "X_Maximum", "Y_Minimum", "Y_Maximum", "Pixels_Areas",
+            "X_Perimeter", "Y_Perimeter", "Sum_of_Luminosity", "Minimum_of_Luminosity",
+            "Maximum_of_Luminosity", "Length_of_Conveyer", "Steel_Plate_Thickness",
+            "Edges_Index", "Empty_Index", "Square_Index", "Outside_X_Index",
+            "Edges_X_Index", "Edges_Y_Index", "LogOfAreas", "Log_X_Index",
+            "Log_Y_Index", "Orientation_Index", "Luminosity_Index", "SigmoidOfAreas",
+        ],
+        "cat_cols": ["TypeOfSteel_A300", "TypeOfSteel_A400", "Outside_Global_Index"],
+    },
+    "bank": {
+        "id": "D6",
+        "name": "Bank Marketing",
+        "task": "classification",
+        "domain": "Finance",
+        "description": "7 num + 9 cat, 45211 samples",
+        "target": "y",
+        "num_cols": ["age", "balance", "duration", "campaign", "pdays", "previous", "day_of_week"],
+        "cat_cols": ["job", "marital", "education", "default", "housing", "loan", "contact", "month", "poutcome"],
+    },
+    "credit": {
+        "id": "D7",
+        "name": "Credit Default",
+        "task": "classification",
+        "domain": "Finance",
+        "description": "14 num + 9 cat, 30000 samples",
+        "target": "Y",
+        "num_cols": ["X1", "X5", "X12", "X13", "X14", "X15", "X16", "X17", "X18", "X19", "X20", "X21", "X22", "X23"],
+        "cat_cols": ["X2", "X3", "X4", "X6", "X7", "X8", "X9", "X10", "X11"],
+        "drop_cols": ["ID"],
+    },
+    "supply_chain": {
+        "id": "D8",
+        "name": "Supply Chain Pricing",
+        "task": "regression",
+        "domain": "Manufacturing",
+        "description": "5 num + 11 cat, ~10000 samples",
+        "target": "Freight Cost (USD)",
+        "num_cols": [
+            "Line Item Quantity", "Line Item Value", "Pack Price", "Unit Price",
+            "Line Item Insurance (USD)",
+        ],
+        "cat_cols": [
+            "Country", "Managed By", "Fulfill Via", "Vendor INCO Term",
+            "Shipment Mode", "Product Group", "Sub Classification",
+            "Dosage Form", "First Line Designation", "Manufacturing Site",
+            "Brand",
+        ],
+        "cat_max_cardinality": {
+            "Manufacturing Site": 20,  # 88 unique factory names → top 20 + Other
+            "Brand": 20,  # 48 brands but 71% is "Generic" → top 20 + Other
+        },
+        "drop_cols": ["ID", "Project Code", "PQ #", "PO / SO #", "ASN/DN #",
+                       "Scheduled Delivery Date", "Delivered to Client Date",
+                       "Delivery Recorded Date", "Item Description",
+                       "Molecule/Test Type", "Dosage", "Vendor",
+                       "Unit of Measure (Per Pack)", "Weight (Kilograms)"],
+    },
+    "news": {
+        "id": "D9",
+        "name": "Online News Popularity",
+        "task": "regression",
+        "domain": "Media",
+        "description": "44 num + 14 cat (binary), 39644 samples",
+        "target": " shares",  # note: leading space from UCI
+        "num_cols": "auto_non_binary",  # all non-binary numeric columns
+        "cat_cols": "auto_binary",  # all binary (0/1) columns
+    },
+    "adult": {
+        "id": "D10",
+        "name": "Adult",
+        "task": "classification",
+        "domain": "Census",
+        "description": "6 num + 8 cat, 48842 samples",
+        "target": "income",
+        "num_cols": ["age", "fnlwgt", "education-num", "capital-gain", "capital-loss", "hours-per-week"],
+        "cat_cols": ["workclass", "education", "marital-status", "occupation", "relationship", "race", "sex", "native-country"],
+    },
+    "ames": {
+        "id": "D11",
+        "name": "Ames Housing",
+        "task": "regression",
+        "domain": "Real Estate",
+        "description": "~20 num + ~46 cat, 2930 samples, ~250 one-hot dims",
+        "target": "SalePrice",
+        "num_cols": [
+            # Continuous measurements
+            "Lot Frontage", "Lot Area", "Mas Vnr Area", "BsmtFin SF 1",
+            "BsmtFin SF 2", "Bsmt Unf SF", "Total Bsmt SF", "1st Flr SF",
+            "2nd Flr SF", "Low Qual Fin SF", "Gr Liv Area", "Garage Area",
+            "Wood Deck SF", "Open Porch SF", "Enclosed Porch", "3Ssn Porch",
+            "Screen Porch", "Pool Area", "Misc Val",
+            # Year/date features — ordinal, not categorical
+            "Year Built", "Year Remod/Add", "Garage Yr Blt", "Yr Sold",
+            # Counts — ordinal numeric
+            "Bsmt Full Bath", "Bsmt Half Bath", "Full Bath", "Half Bath",
+            "Bedroom AbvGr", "Kitchen AbvGr", "TotRms AbvGrd", "Fireplaces",
+            "Garage Cars",
+        ],
+        "cat_cols": [
+            # Building classification
+            "MS SubClass", "MS Zoning", "Street", "Alley", "Lot Shape",
+            "Land Contour", "Utilities", "Lot Config", "Land Slope",
+            "Neighborhood", "Condition 1", "Condition 2", "Bldg Type",
+            "House Style",
+            # Quality/condition ratings (ordinal but categorical semantics)
+            "Overall Qual", "Overall Cond",
+            "Exter Qual", "Exter Cond", "Bsmt Qual", "Bsmt Cond",
+            "Heating QC", "Kitchen Qual", "Garage Qual", "Garage Cond",
+            "Pool QC", "Fireplace Qu",
+            # Material/type features
+            "Roof Style", "Roof Matl", "Exterior 1st", "Exterior 2nd",
+            "Mas Vnr Type", "Foundation", "Bsmt Exposure",
+            "BsmtFin Type 1", "BsmtFin Type 2",
+            "Heating", "Central Air", "Electrical",
+            "Garage Type", "Garage Finish", "Paved Drive",
+            "Fence", "Misc Feature", "Functional",
+            # Sale info
+            "Mo Sold", "Sale Type", "Sale Condition",
+        ],
+        "drop_cols": ["Order", "PID"],
+    },
+}
+
+
+# =============================================================================
+# Raw Data Fetchers — download/load only, no column decisions
+# =============================================================================
+
+def _fetch_iris() -> pd.DataFrame:
     from sklearn.datasets import load_iris
-    data = load_iris(as_frame=True)
-    df = data.frame
-    target = "target"
-    num_cols = [c for c in df.columns if c != target]
-    cat_cols = []
-    return df, target, num_cols, cat_cols
+    return load_iris(as_frame=True).frame
 
-
-def _load_california_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
+def _fetch_california() -> pd.DataFrame:
     from sklearn.datasets import fetch_california_housing
-    data = fetch_california_housing(as_frame=True)
-    df = data.frame
-    target = "MedHouseVal"
-    num_cols = [c for c in df.columns if c != target]
-    cat_cols = []
-    return df, target, num_cols, cat_cols
+    return fetch_california_housing(as_frame=True).frame
 
-
-def _load_insurance_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
-    """Insurance Charges dataset from Kaggle (CC0)."""
-    dataset_dir = _ensure_dir(DATA_DIR / "insurance")
-    csv_path = dataset_dir / "insurance.csv"
-
+def _fetch_insurance() -> pd.DataFrame:
+    csv_path = _ensure_dir(DATA_DIR / "insurance") / "insurance.csv"
     if not csv_path.exists():
-        # Download from GitHub mirror (original Kaggle, CC0 license)
         import urllib.request
-        url = "https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/insurance.csv"
-        print(f"Downloading Insurance dataset to {csv_path}...")
-        urllib.request.urlretrieve(url, csv_path)
+        urllib.request.urlretrieve(
+            "https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/insurance.csv",
+            csv_path,
+        )
+    return pd.read_csv(csv_path)
 
-    df = pd.read_csv(csv_path)
-    target = "charges"
-    cat_cols = ["sex", "smoker", "region"]
-    num_cols = [c for c in df.columns if c not in cat_cols and c != target]
-    return df, target, num_cols, cat_cols
-
-
-def _load_maintenance_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
-    """AI4I 2020 Predictive Maintenance (UCI ID 601)."""
+def _fetch_maintenance() -> pd.DataFrame:
     from ucimlrepo import fetch_ucirepo
-    dataset = fetch_ucirepo(id=601)
-    df = pd.concat([dataset.data.features, dataset.data.targets], axis=1)
+    ds = fetch_ucirepo(id=601)
+    return pd.concat([ds.data.features, ds.data.targets], axis=1)
 
-    target = "Machine failure"
-    # Drop UDI and Product ID (identifiers, not features)
-    drop_cols = ["UDI", "Product ID"]
-    df = df.drop(columns=[c for c in drop_cols if c in df.columns], errors="ignore")
-
-    # Type column is categorical
-    cat_cols = ["Type"]
-    # Failure mode columns are binary categorical
-    failure_modes = ["TWF", "HDF", "PWF", "OSF", "RNF"]
-    cat_cols += [c for c in failure_modes if c in df.columns]
-    num_cols = [c for c in df.columns if c not in cat_cols and c != target]
-    return df, target, num_cols, cat_cols
-
-
-def _load_steel_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
-    """Steel Plates Faults (UCI ID 198)."""
+def _fetch_steel() -> pd.DataFrame:
     from ucimlrepo import fetch_ucirepo
-    dataset = fetch_ucirepo(id=198)
-    df = pd.concat([dataset.data.features, dataset.data.targets], axis=1)
-
-    # The target is a multi-class fault type (7 binary columns in original)
-    # Convert 7 binary fault columns to single target
-    fault_cols = [c for c in dataset.data.targets.columns]
+    ds = fetch_ucirepo(id=198)
+    df = pd.concat([ds.data.features, ds.data.targets], axis=1)
+    # Convert 7 binary fault columns → single fault_type
+    fault_cols = list(ds.data.targets.columns)
     if len(fault_cols) > 1:
-        # Multi-label to single label
-        df["fault_type"] = dataset.data.targets.values.argmax(axis=1)
+        df["fault_type"] = ds.data.targets.values.argmax(axis=1)
         df = df.drop(columns=fault_cols)
-        target = "fault_type"
-    else:
-        target = fault_cols[0]
+    return df
 
-    # Identify binary/categorical columns (columns with few unique values)
-    cat_cols = []
-    num_cols = []
-    for c in df.columns:
-        if c == target:
-            continue
-        if df[c].nunique() <= 10:
-            cat_cols.append(c)
-        else:
-            num_cols.append(c)
-
-    return df, target, num_cols, cat_cols
-
-
-def _load_bank_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
-    """Bank Marketing (UCI ID 222)."""
+def _fetch_bank() -> pd.DataFrame:
     from ucimlrepo import fetch_ucirepo
-    dataset = fetch_ucirepo(id=222)
-    df = pd.concat([dataset.data.features, dataset.data.targets], axis=1)
+    ds = fetch_ucirepo(id=222)
+    df = pd.concat([ds.data.features, ds.data.targets], axis=1)
+    if df["y"].dtype == object:
+        df["y"] = (df["y"] == "yes").astype(int)
+    return df
 
-    target = "y"
-    # Encode target: yes/no -> 1/0
-    if df[target].dtype == object:
-        df[target] = (df[target] == "yes").astype(int)
-
-    cat_cols = []
-    num_cols = []
-    for c in df.columns:
-        if c == target:
-            continue
-        if df[c].dtype == object or df[c].nunique() <= 10:
-            cat_cols.append(c)
-        else:
-            num_cols.append(c)
-
-    return df, target, num_cols, cat_cols
-
-
-def _load_credit_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
-    """Default of Credit Card Clients (UCI ID 350)."""
+def _fetch_credit() -> pd.DataFrame:
     from ucimlrepo import fetch_ucirepo
-    dataset = fetch_ucirepo(id=350)
-    df = pd.concat([dataset.data.features, dataset.data.targets], axis=1)
+    ds = fetch_ucirepo(id=350)
+    return pd.concat([ds.data.features, ds.data.targets], axis=1)
 
-    target = "default payment next month" if "default payment next month" in df.columns else df.columns[-1]
-
-    # UCI version uses X1-X23 naming. Map known categoricals:
-    # X2=SEX, X3=EDUCATION, X4=MARRIAGE, X6-X11=PAY_0..PAY_5
-    # Named version: SEX, EDUCATION, MARRIAGE, PAY_0..PAY_6
-    known_cat_named = ["SEX", "EDUCATION", "MARRIAGE"]
-    known_cat_x = ["X2", "X3", "X4", "X6", "X7", "X8", "X9", "X10", "X11"]  # UCI generic names
-
-    cat_cols = []
-    for c in df.columns:
-        if c == target or c.upper() == "ID":
-            continue
-        c_up = c.upper()
-        if c in known_cat_named or c in known_cat_x:
-            cat_cols.append(c)
-        elif c_up.startswith("PAY") and "AMT" not in c_up:
-            cat_cols.append(c)
-    num_cols = [c for c in df.columns if c not in cat_cols and c != target and c.upper() != "ID"]
-
-    # Drop ID if present
-    if "ID" in df.columns:
-        df = df.drop(columns=["ID"])
-
-    return df, target, num_cols, cat_cols
-
-
-def _load_supply_chain_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
-    """Supply Chain Shipment Pricing (Kaggle, CC0)."""
-    dataset_dir = _ensure_dir(DATA_DIR / "supply_chain")
-    csv_path = dataset_dir / "supply_chain.csv"
-
+def _fetch_supply_chain() -> pd.DataFrame:
+    csv_path = _ensure_dir(DATA_DIR / "supply_chain") / "supply_chain.csv"
     if not csv_path.exists():
         import urllib.request
-        url = "https://raw.githubusercontent.com/jrcinco/supply-chain-shipment-price-data/master/SCMS_Delivery_History_Dataset.csv"
-        print(f"Downloading Supply Chain dataset to {csv_path}...")
-        urllib.request.urlretrieve(url, csv_path)
-
+        urllib.request.urlretrieve(
+            "https://raw.githubusercontent.com/jrcinco/supply-chain-shipment-price-data/master/SCMS_Delivery_History_Dataset.csv",
+            csv_path,
+        )
     df = pd.read_csv(csv_path)
-
-    # Clean column names
     df.columns = df.columns.str.strip()
+    return df
 
-    # Target: freight cost or line item value
-    target_candidates = ["Freight Cost (USD)", "Line Item Value", "Weight (Kilograms)"]
-    target = None
-    for tc in target_candidates:
-        if tc in df.columns:
-            target = tc
-            break
-    if target is None:
-        # Fallback: use last numeric column
-        num_candidates = df.select_dtypes(include=[np.number]).columns
-        target = num_candidates[-1] if len(num_candidates) > 0 else df.columns[-1]
-
-    cat_cols = []
-    num_cols = []
-    # Drop ID-like and date columns
-    drop_patterns = ["ID", "id", "Date", "date", "PQ #", "PO #", "ASN/DN #"]
-    keep_cols = [c for c in df.columns if c != target and not any(p in c for p in drop_patterns)]
-
-    for c in keep_cols:
-        if df[c].dtype == object or df[c].nunique() <= 20:
-            cat_cols.append(c)
-        else:
-            num_cols.append(c)
-
-    # Convert target to numeric — drop non-numeric rows (e.g., "Freight Included in Commodity Cost")
-    if df[target].dtype == object:
-        df[target] = pd.to_numeric(df[target].astype(str).str.replace(",", ""), errors="coerce")
-    df = df.dropna(subset=[target])
-
-    # Also convert numeric columns that may have mixed types
-    for c in list(num_cols):
-        if df[c].dtype == object:
-            df[c] = pd.to_numeric(df[c].astype(str).str.replace(",", ""), errors="coerce")
-
-    return df, target, num_cols, cat_cols
-
-
-def _load_news_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
-    """Online News Popularity (UCI ID 332)."""
+def _fetch_news() -> pd.DataFrame:
     from ucimlrepo import fetch_ucirepo
-    dataset = fetch_ucirepo(id=332)
-    df = pd.concat([dataset.data.features, dataset.data.targets], axis=1)
-
-    target = "shares" if "shares" in df.columns else df.columns[-1]
-
-    # Remove non-predictive columns
-    drop_cols = ["url", "timedelta"]
+    ds = fetch_ucirepo(id=332)
+    df = pd.concat([ds.data.features, ds.data.targets], axis=1)
+    drop_cols = ["url", "timedelta", " url", " timedelta"]
     df = df.drop(columns=[c for c in drop_cols if c in df.columns], errors="ignore")
+    return df
 
-    # Binary columns (is_weekend, data_channel_is_*) are categorical
-    cat_cols = []
-    num_cols = []
-    for c in df.columns:
-        if c == target:
-            continue
-        if df[c].nunique() == 2 and set(df[c].unique()).issubset({0, 1, 0.0, 1.0}):
-            cat_cols.append(c)
-        else:
-            num_cols.append(c)
-
-    return df, target, num_cols, cat_cols
-
-
-def _load_adult_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
-    """Adult Census Income (OpenML)."""
+def _fetch_adult() -> pd.DataFrame:
     from sklearn.datasets import fetch_openml
     data = fetch_openml("adult", version=2, as_frame=True, parser="auto")
     df = data.frame
-
-    target = "income" if "income" in df.columns else df.columns[-1]
-
+    # Rename target if needed
+    target_col = [c for c in df.columns if c.lower() in ("income", "class", "target")]
+    if target_col and target_col[0] != "income":
+        df = df.rename(columns={target_col[0]: "income"})
     # Encode target
-    if df[target].dtype == object or df[target].dtype.name == "category":
-        df[target] = (df[target].astype(str).str.strip().str.contains(">50K")).astype(int)
+    if "income" in df.columns:
+        df["income"] = (df["income"].astype(str).str.strip().str.contains(">50K")).astype(int)
+    return df
 
-    cat_cols = []
-    num_cols = []
-    for c in df.columns:
-        if c == target:
-            continue
-        if df[c].dtype == object or df[c].dtype.name == "category":
-            cat_cols.append(c)
-        else:
-            num_cols.append(c)
-
-    return df, target, num_cols, cat_cols
-
-
-def _load_ames_raw() -> Tuple[pd.DataFrame, str, List[str], List[str]]:
-    """Ames Housing dataset — original with string categoricals."""
-    dataset_dir = _ensure_dir(DATA_DIR / "ames")
-    csv_path = dataset_dir / "ames.csv"
-
+def _fetch_ames() -> pd.DataFrame:
+    csv_path = _ensure_dir(DATA_DIR / "ames") / "ames.csv"
     if not csv_path.exists():
         import urllib.request
-        # Original De Cock dataset with string categoricals (not pre-encoded)
-        url = "https://raw.githubusercontent.com/STATCowboy/pbidataflowstalk/master/AmesHousing.csv"
-        print(f"Downloading Ames Housing dataset to {csv_path}...")
-        try:
-            urllib.request.urlretrieve(url, csv_path)
-        except Exception:
-            # Fallback: use OpenML but force categorical detection
-            from sklearn.datasets import fetch_openml
-            data = fetch_openml("house_prices", version=1, as_frame=True, parser="auto")
-            data.frame.to_csv(csv_path, index=False)
+        urllib.request.urlretrieve(
+            "https://raw.githubusercontent.com/STATCowboy/pbidataflowstalk/master/AmesHousing.csv",
+            csv_path,
+        )
+    return pd.read_csv(csv_path)
 
-    df = pd.read_csv(csv_path)
 
-    # Find target column
-    target_candidates = ["SalePrice", "Sale Price", "saleprice"]
-    target = None
-    for tc in target_candidates:
-        matches = [c for c in df.columns if c.replace(" ", "") == tc.replace(" ", "")]
+_FETCHERS = {
+    "iris": _fetch_iris,
+    "california": _fetch_california,
+    "insurance": _fetch_insurance,
+    "maintenance": _fetch_maintenance,
+    "steel": _fetch_steel,
+    "bank": _fetch_bank,
+    "credit": _fetch_credit,
+    "supply_chain": _fetch_supply_chain,
+    "news": _fetch_news,
+    "adult": _fetch_adult,
+    "ames": _fetch_ames,
+}
+
+
+# =============================================================================
+# Column Resolution — apply explicit config to raw DataFrame
+# =============================================================================
+
+def _resolve_columns(df: pd.DataFrame, config: dict) -> Tuple[str, List[str], List[str]]:
+    """
+    Resolve target, numerical, and categorical columns from explicit config.
+    Handles 'auto_binary' and 'auto_non_binary' for News dataset.
+    """
+    target = config["target"]
+
+    # Find target column (handle case variations)
+    if target not in df.columns:
+        matches = [c for c in df.columns if c.strip() == target.strip()]
         if matches:
             target = matches[0]
-            break
-    if target is None:
-        # Last numeric column as fallback
-        num_candidates = df.select_dtypes(include=[np.number]).columns
-        target = num_candidates[-1]
-
-    # Drop ID-like columns
-    drop_patterns = ["Order", "PID", "Id"]
-    df = df.drop(columns=[c for c in df.columns if c in drop_patterns], errors="ignore")
-
-    # Known categorical columns in Ames Housing
-    # These are the string-type columns plus ordinal integer columns
-    known_ordinal = [
-        "MS SubClass", "MSSubClass", "Overall Qual", "OverallQual",
-        "Overall Cond", "OverallCond", "Mo Sold", "MoSold",
-    ]
-
-    cat_cols = []
-    num_cols = []
-    for c in df.columns:
-        if c == target:
-            continue
-        # Check for string/object/category dtype (pandas 2.0+ uses StringDtype)
-        is_string = df[c].dtype == object or df[c].dtype.name in ("str", "string", "category")
-        if is_string:
-            cat_cols.append(c)
-        elif c in known_ordinal or c.replace(" ", "") in [k.replace(" ", "") for k in known_ordinal]:
-            cat_cols.append(c)
         else:
-            num_cols.append(c)
+            raise ValueError(f"Target '{target}' not found. Available: {list(df.columns)}")
 
-    return df, target, num_cols, cat_cols
+    # Drop specified columns
+    drop_cols = config.get("drop_cols", [])
+    df = df.drop(columns=[c for c in drop_cols if c in df.columns], errors="ignore")
 
+    # Resolve numerical columns
+    num_cols_cfg = config["num_cols"]
+    if num_cols_cfg == "auto_non_binary":
+        # News dataset: all non-binary numeric columns
+        num_cols = []
+        for c in df.columns:
+            if c == target:
+                continue
+            if df[c].dtype in (np.float64, np.int64, float, int):
+                unique = set(df[c].dropna().unique())
+                if not unique.issubset({0, 1, 0.0, 1.0}):
+                    num_cols.append(c)
+    else:
+        num_cols = [c for c in num_cols_cfg if c in df.columns]
 
-# Loader dispatch
-_LOADERS = {
-    "iris": _load_iris_raw,
-    "california": _load_california_raw,
-    "insurance": _load_insurance_raw,
-    "maintenance": _load_maintenance_raw,
-    "steel": _load_steel_raw,
-    "bank": _load_bank_raw,
-    "credit": _load_credit_raw,
-    "supply_chain": _load_supply_chain_raw,
-    "news": _load_news_raw,
-    "adult": _load_adult_raw,
-    "ames": _load_ames_raw,
-}
+    # Resolve categorical columns
+    cat_cols_cfg = config["cat_cols"]
+    if cat_cols_cfg == "auto_binary":
+        # News dataset: all binary (0/1) columns
+        cat_cols = []
+        for c in df.columns:
+            if c == target or c in num_cols:
+                continue
+            if df[c].dtype in (np.float64, np.int64, float, int):
+                unique = set(df[c].dropna().unique())
+                if unique.issubset({0, 1, 0.0, 1.0}):
+                    cat_cols.append(c)
+    else:
+        cat_cols = [c for c in cat_cols_cfg if c in df.columns]
+
+    return target, num_cols, cat_cols, df
 
 
 # =============================================================================
@@ -490,55 +391,45 @@ def preprocess_dataset(
     num_cols: List[str],
     cat_cols: List[str],
     task: str,
+    cat_max_cardinality: Optional[Dict[str, int]] = None,
     test_size: float = 0.2,
     random_state: int = 42,
     scaler_type: str = "minmax",
     outlier_clip: bool = True,
 ) -> Dict[str, Any]:
-    """
-    Preprocess a dataset into train/test tensors.
-
-    Args:
-        scaler_type: "minmax" (our approach) or "quantile" (vanilla TabDDPM)
-        outlier_clip: If True, clip numerical outliers to 1st-99th percentile (our approach)
-
-    Returns dict with:
-        X_num_train, X_num_test: Scaled numerical features (torch tensors)
-        X_cat_train, X_cat_test: Label-encoded categorical indices (torch tensors)
-        y_train, y_test: Target values (torch tensors)
-        num_cols, cat_cols: Column names
-        cat_cardinalities: Number of unique values per categorical feature
-        task_type: "regression" or "classification"
-        scaler: Fitted scaler for numerical features
-        label_encoders: Fitted label encoders for categorical features
-        target_encoder: Fitted encoder for target (classification) or scaler (regression)
-        n_train, n_test: Sample counts
-        d_numerical, d_categorical: Feature counts
-    """
+    """Preprocess dataset into train/test tensors with explicit column config."""
     df = df.copy()
 
-    # Convert target to numeric for regression tasks (handles mixed-type targets)
+    # Convert target to numeric for regression
     if task == "regression":
         df[target] = pd.to_numeric(df[target].astype(str).str.replace(",", ""), errors="coerce")
 
-    # Drop rows with missing target
     df = df.dropna(subset=[target])
 
-    # Handle missing values in features
+    # Handle missing numerical values
     for c in num_cols:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce")
             df[c] = df[c].fillna(df[c].median())
+
+    # Handle missing categorical values + convert to string
     for c in cat_cols:
         if c in df.columns:
-            # Convert any special dtype (categorical, StringDtype) to plain str
             df[c] = df[c].astype(str).fillna("_missing_")
 
-    # Filter to only existing columns
+    # Cap high-cardinality categoricals per config
+    if cat_max_cardinality:
+        for c, max_card in cat_max_cardinality.items():
+            if c in cat_cols and c in df.columns:
+                if df[c].nunique() > max_card:
+                    top_values = df[c].value_counts().head(max_card).index.tolist()
+                    df[c] = df[c].where(df[c].isin(top_values), other="_other_")
+
+    # Filter to existing columns only
     num_cols = [c for c in num_cols if c in df.columns]
     cat_cols = [c for c in cat_cols if c in df.columns]
 
-    # Extract features and target
+    # Extract arrays
     X_num = df[num_cols].values.astype(np.float32) if num_cols else np.empty((len(df), 0), dtype=np.float32)
     X_cat_raw = df[cat_cols] if cat_cols else pd.DataFrame()
     y = df[target].values
@@ -563,8 +454,6 @@ def preprocess_dataset(
         le = LabelEncoder()
         col_train = X_cat_raw.iloc[train_idx][c].values
         col_test = X_cat_raw.iloc[test_idx][c].values
-
-        # Fit on all data to handle unseen categories in test
         le.fit(np.concatenate([col_train, col_test]))
         cat_encoded_train.append(le.transform(col_train))
         cat_encoded_test.append(le.transform(col_test))
@@ -577,7 +466,6 @@ def preprocess_dataset(
     # Scale numerical features
     if num_cols:
         if outlier_clip:
-            # Our approach: clip to 1st-99th percentile before scaling
             p1 = np.percentile(X_num_train, 1, axis=0)
             p99 = np.percentile(X_num_train, 99, axis=0)
             X_num_train = np.clip(X_num_train, p1, p99)
@@ -633,7 +521,6 @@ def preprocess_dataset(
 # =============================================================================
 
 def list_datasets() -> None:
-    """Print all available datasets."""
     print(f"\n{'ID':<5} {'Key':<15} {'Name':<30} {'Task':<15} {'Domain':<15}")
     print("=" * 80)
     for key, info in DATASET_REGISTRY.items():
@@ -642,7 +529,6 @@ def list_datasets() -> None:
 
 
 def get_dataset_info(name: str) -> Dict:
-    """Get metadata for a dataset."""
     if name not in DATASET_REGISTRY:
         raise ValueError(f"Unknown dataset: {name}. Available: {list(DATASET_REGISTRY.keys())}")
     return DATASET_REGISTRY[name]
@@ -655,50 +541,43 @@ def load_dataset(
     cache: bool = True,
     force_reload: bool = False,
 ) -> Dict[str, Any]:
-    """
-    Load and preprocess a dataset.
-
-    Args:
-        name: Dataset key (e.g., "iris", "insurance", "adult")
-        scaler_type: "minmax" (our approach) or "quantile" (vanilla TabDDPM)
-        outlier_clip: Whether to clip outliers (our approach)
-        cache: Whether to cache preprocessed data as .pt files
-        force_reload: Force re-download and re-preprocessing
-
-    Returns:
-        Dict with train/test tensors, metadata, and fitted preprocessors
-    """
+    """Load and preprocess a dataset using explicit column configuration."""
     if name not in DATASET_REGISTRY:
         raise ValueError(f"Unknown dataset: {name}. Available: {list(DATASET_REGISTRY.keys())}")
 
-    info = DATASET_REGISTRY[name]
+    config = DATASET_REGISTRY[name]
     cache_dir = _ensure_dir(DATA_DIR / name)
     cache_key = f"{scaler_type}_{'clip' if outlier_clip else 'noclip'}"
     cache_path = cache_dir / f"prepared_{cache_key}.pt"
 
     if cache and cache_path.exists() and not force_reload:
-        print(f"Loading cached {info['name']} from {cache_path}")
+        print(f"Loading cached {config['name']} from {cache_path}")
         return torch.load(cache_path, weights_only=False)
 
-    print(f"Loading {info['name']} ({info['id']})...")
-    loader = _LOADERS[name]
-    df, target, num_cols, cat_cols = loader()
+    print(f"Loading {config['name']} ({config['id']})...")
+
+    # Fetch raw data
+    df = _FETCHERS[name]()
+
+    # Resolve columns from config
+    target, num_cols, cat_cols, df = _resolve_columns(df, config)
 
     print(f"  Raw: {len(df)} samples, {len(num_cols)} numerical, {len(cat_cols)} categorical")
 
+    # Preprocess
     data = preprocess_dataset(
         df=df,
         target=target,
         num_cols=num_cols,
         cat_cols=cat_cols,
-        task=info["task"],
+        task=config["task"],
+        cat_max_cardinality=config.get("cat_max_cardinality"),
         scaler_type=scaler_type,
         outlier_clip=outlier_clip,
     )
 
-    # Add metadata
     data["dataset_name"] = name
-    data["dataset_info"] = info
+    data["dataset_info"] = config
 
     print(f"  Preprocessed: {data['n_train']} train, {data['n_test']} test")
     print(f"  Dimensions: {data['d_numerical']} num + {data['d_categorical']} cat = {data['d_onehot'] + data['d_numerical']} total")
@@ -710,12 +589,7 @@ def load_dataset(
     return data
 
 
-def load_all_datasets(
-    scaler_type: str = "minmax",
-    outlier_clip: bool = True,
-    **kwargs,
-) -> Dict[str, Dict]:
-    """Load all 10 datasets. Returns dict keyed by dataset name."""
+def load_all_datasets(scaler_type: str = "minmax", outlier_clip: bool = True, **kwargs) -> Dict[str, Dict]:
     results = {}
     for name in DATASET_REGISTRY:
         try:
@@ -734,35 +608,25 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Dataset loader for Phase 2 experiments")
     parser.add_argument("--dataset", type=str, default=None, help="Dataset to load (or 'all')")
     parser.add_argument("--scaler", type=str, default="minmax", choices=["minmax", "quantile"])
-    parser.add_argument("--no-clip", action="store_true", help="Disable outlier clipping")
-    parser.add_argument("--list", action="store_true", help="List available datasets")
-    parser.add_argument("--force", action="store_true", help="Force re-download")
+    parser.add_argument("--no-clip", action="store_true")
+    parser.add_argument("--list", action="store_true")
+    parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
 
     if args.list:
         list_datasets()
     elif args.dataset == "all":
-        data = load_all_datasets(
-            scaler_type=args.scaler,
-            outlier_clip=not args.no_clip,
-            force_reload=args.force,
-        )
-        print(f"\nLoaded {len(data)} datasets successfully.")
+        data = load_all_datasets(scaler_type=args.scaler, outlier_clip=not args.no_clip, force_reload=args.force)
+        print(f"\nLoaded {len(data)} datasets:")
         for name, d in data.items():
+            total = d['d_numerical'] + d['d_onehot']
             print(f"  {d['dataset_info']['id']} {name}: {d['n_train']}+{d['n_test']} samples, "
-                  f"{d['d_numerical']}num+{d['d_categorical']}cat={d['d_onehot']+d['d_numerical']}dims")
+                  f"{d['d_numerical']}num+{d['d_categorical']}cat={total}dims")
     elif args.dataset:
-        data = load_dataset(
-            args.dataset,
-            scaler_type=args.scaler,
-            outlier_clip=not args.no_clip,
-            force_reload=args.force,
-        )
-        print(f"\nDataset: {data['dataset_info']['name']}")
-        print(f"  Task: {data['task_type']}")
-        print(f"  Train: {data['n_train']}, Test: {data['n_test']}")
-        print(f"  Numerical: {data['d_numerical']} cols, Categorical: {data['d_categorical']} cols")
-        print(f"  Total dims (with one-hot): {data['d_onehot'] + data['d_numerical']}")
-        print(f"  Cat cardinalities: {data['cat_cardinalities']}")
+        data = load_dataset(args.dataset, scaler_type=args.scaler, outlier_clip=not args.no_clip, force_reload=args.force)
+        total = data['d_numerical'] + data['d_onehot']
+        print(f"\n{data['dataset_info']['name']}: {data['n_train']}+{data['n_test']} samples, "
+              f"{data['d_numerical']}num+{data['d_categorical']}cat={total}dims, "
+              f"cardinalities={data['cat_cardinalities']}")
     else:
         list_datasets()
