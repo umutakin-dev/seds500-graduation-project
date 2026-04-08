@@ -1,0 +1,200 @@
+{
+  "dataset": "adult",
+  "dataset_info": {
+    "name": "Adult",
+    "id": "D10",
+    "task": "classification",
+    "n_train": 39073,
+    "n_test": 9769,
+    "d_numerical": 6,
+    "d_categorical": 8,
+    "d_onehot": 102,
+    "total_dims": 108
+  },
+  "method": "vanilla_tabddpm",
+  "preprocessing": {
+    "scaler": "quantile",
+    "outlier_clip": false
+  },
+  "utility": {
+    "task_type": "classification",
+    "primary_metric": "accuracy",
+    "baseline": {
+      "RandomForest": {
+        "accuracy": 0.8559729757395844,
+        "f1_macro": 0.7915112498287303
+      },
+      "GradientBoosting": {
+        "accuracy": 0.8690756474562391,
+        "f1_macro": 0.8029181030541441
+      },
+      "LogisticRegression": {
+        "accuracy": 0.8476814412938888,
+        "f1_macro": 0.7755882084863862
+      }
+    },
+    "replacement": {
+      "RandomForest": {
+        "accuracy": 0.8456341488381616,
+        "f1_macro": 0.7731914314465222
+      },
+      "GradientBoosting": {
+        "accuracy": 0.8503429214863343,
+        "f1_macro": 0.7810015807078569
+      },
+      "LogisticRegression": {
+        "accuracy": 0.8426655747773569,
+        "f1_macro": 0.7789084966179814
+      }
+    },
+    "augmentation": {
+      "RandomForest": {
+        "accuracy": 0.8579179035725253,
+        "f1_macro": 0.7943605469413506
+      },
+      "GradientBoosting": {
+        "accuracy": 0.8630361347118436,
+        "f1_macro": 0.7970971257195014
+      },
+      "LogisticRegression": {
+        "accuracy": 0.8466577950660252,
+        "f1_macro": 0.778718521365316
+      }
+    },
+    "summary": {
+      "baseline": {
+        "avg_accuracy": 0.8575766881632374
+      },
+      "replacement": {
+        "avg_accuracy": 0.8462142150339509,
+        "pct_of_baseline": 98.67504874069948
+      },
+      "augmentation": {
+        "avg_accuracy": 0.8558706111167981,
+        "pct_of_baseline": 99.8010583694744
+      }
+    }
+  },
+  "fidelity": {
+    "numerical": {
+      "wasserstein": [
+        35.457451020564015,
+        12.662407218009848,
+        200.96681285590057,
+        2.0972632945848706,
+        5.847616444637333,
+        52.533579298450434
+      ],
+      "ks_test": [
+        {
+          "statistic": 0.130780846108566,
+          "p_value": 8.428033494450192e-292
+        },
+        {
+          "statistic": 0.08522509149540602,
+          "p_value": 6.7386291483232065e-124
+        },
+        {
+          "statistic": 0.25718526859980034,
+          "p_value": 0.0
+        },
+        {
+          "statistic": 0.4857574284032452,
+          "p_value": 0.0
+        },
+        {
+          "statistic": 0.5111713971284519,
+          "p_value": 0.0
+        },
+        {
+          "statistic": 0.28725718526859984,
+          "p_value": 0.0
+        }
+      ],
+      "jensen_shannon_divergence": [
+        0.039694127692120725,
+        0.03647722357223079,
+        0.026816018670486864,
+        0.07198189283516189,
+        0.03560721190316076,
+        0.012732486883218253
+      ],
+      "mean_diff": [
+        35.45671081542969,
+        8.599838256835938,
+        200.87574768066406,
+        1.7564501762390137,
+        4.24972677230835,
+        52.48944854736328
+      ],
+      "std_diff": [
+        131.00924682617188,
+        47.51887130737305,
+        857.0872192382812,
+        5.6695733070373535,
+        21.641454696655273,
+        342.890869140625
+      ],
+      "correlation_frobenius_norm": 3.7604735393692654,
+      "n_columns": 6,
+      "avg_wasserstein": 51.59418835535785,
+      "avg_jsd": 0.037218160259396546,
+      "avg_ks_statistic": 0.2928962028340116,
+      "pct_ks_pass_005": 0.0,
+      "column_names": [
+        "age",
+        "fnlwgt",
+        "education-num",
+        "capital-gain",
+        "capital-loss",
+        "hours-per-week"
+      ]
+    },
+    "categorical": {
+      "frequency_l1_diff": [
+        0.07263327617536401,
+        0.1782816778849845,
+        0.11829140327080079,
+        0.22404217746269803,
+        0.10616026412100421,
+        0.04831981163463259,
+        0.01873416425664781,
+        0.15105059759936532
+      ],
+      "avg_frequency_l1_diff": 0.11468917155068717,
+      "n_columns": 8,
+      "column_names": [
+        "workclass",
+        "education",
+        "marital-status",
+        "occupation",
+        "relationship",
+        "race",
+        "sex",
+        "native-country"
+      ]
+    },
+    "summary": {
+      "avg_wasserstein": 51.59418835535785,
+      "avg_jsd": 0.037218160259396546,
+      "correlation_frobenius": 3.7604735393692654,
+      "avg_cat_freq_diff": 0.11468917155068717
+    }
+  },
+  "privacy": {
+    "attack_auc": 0.49595811007580315,
+    "simple_distance_auc": 0.5021273806628929,
+    "interpretation": "SAFE \u2014 no membership information leaked",
+    "mean_dist_train": 1.2479471072798758,
+    "mean_dist_test": 1.2519682755584922,
+    "dist_ratio": 0.996788122864517
+  },
+  "timing": {
+    "training_seconds": 2723.0625433921814
+  },
+  "extra": {
+    "epochs": 500,
+    "best_loss": 0.28930016490174276,
+    "used_dummy_cat": false
+  }
+}

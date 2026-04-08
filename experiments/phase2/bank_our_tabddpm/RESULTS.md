@@ -5,7 +5,7 @@
 **Dimensions:** 7 num + 9 cat = 51 total
 **Samples:** 36168 train / 9043 test
 **Preprocessing:** minmax, clip=True
-**Training time:** 2463.4s
+**Training time:** 2497.9s
 
 ## Utility
 
@@ -19,32 +19,42 @@
 ### Replacement
 | Model | Accuracy | F1 (macro) |
 | --- | --- | --- |
-| RandomForest | 0.8930 | 0.6167 |
-| GradientBoosting | 0.8967 | 0.6297 |
-| LogisticRegression | 0.8978 | 0.6451 |
+| RandomForest | 0.8946 | 0.6234 |
+| GradientBoosting | 0.8955 | 0.6173 |
+| LogisticRegression | 0.8980 | 0.6495 |
 
 ### Augmentation
 | Model | Accuracy | F1 (macro) |
 | --- | --- | --- |
-| RandomForest | 0.9040 | 0.7054 |
-| GradientBoosting | 0.9019 | 0.6861 |
-| LogisticRegression | 0.8995 | 0.6757 |
+| RandomForest | 0.9047 | 0.7087 |
+| GradientBoosting | 0.9012 | 0.6847 |
+| LogisticRegression | 0.8991 | 0.6760 |
 
 ### Summary
 | Scenario | Avg ACCURACY | % of Baseline |
 | --- | --- | --- |
 | Baseline | 0.9042 | 100.0% |
-| Replacement | 0.8958 | 99.1% |
-| Augmentation | 0.9018 | 99.7% |
+| Replacement | 0.8961 | 99.1% |
+| Augmentation | 0.9017 | 99.7% |
 
 ## Fidelity
 ### Statistical Fidelity Summary
 | Metric | Value |
 | --- | --- |
-| avg_wasserstein | 0.5213 |
-| avg_jsd | 0.0053 |
-| correlation_frobenius | 3.6559 |
-| avg_cat_freq_diff | 0.0269 |
+| avg_wasserstein | 0.1710 |
+| avg_jsd | 0.0084 |
+| correlation_frobenius | 2.0333 |
+| avg_cat_freq_diff | 0.0144 |
 
-**Numerical:** 7 columns, avg Wasserstein=0.5213, avg JSD=0.0053, KS pass rate (p>0.05)=0%
-**Categorical:** 9 columns, avg freq L1 diff=0.0269
+**Numerical:** 7 columns, avg Wasserstein=0.1710, avg JSD=0.0084, KS pass rate (p>0.05)=0%
+**Categorical:** 9 columns, avg freq L1 diff=0.0144
+
+## Privacy (Membership Inference Attack)
+| Metric | Value |
+| --- | --- |
+| Attack AUC | **0.5026** |
+| Interpretation | SAFE — no membership information leaked |
+| Distance Ratio (train/test) | 0.9948 |
+
+*AUC ~0.50 = safe (random guessing), >0.60 = privacy concern, >0.80 = critical leak*
+

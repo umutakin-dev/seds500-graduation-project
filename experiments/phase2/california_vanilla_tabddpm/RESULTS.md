@@ -5,7 +5,7 @@
 **Dimensions:** 8 num + 0 cat = 8 total
 **Samples:** 16512 train / 4128 test
 **Preprocessing:** quantile, clip=False
-**Training time:** 470.5s
+**Training time:** 464.6s
 
 ## Utility
 
@@ -19,30 +19,40 @@
 ### Replacement
 | Model | R² | RMSE |
 | --- | --- | --- |
-| RandomForest | 0.6940 | 0.6332 |
-| GradientBoosting | 0.6518 | 0.6754 |
-| Ridge | 0.4075 | 0.8812 |
+| RandomForest | 0.6986 | 0.6284 |
+| GradientBoosting | 0.6786 | 0.6489 |
+| Ridge | 0.5283 | 0.7862 |
 
 ### Augmentation
 | Model | R² | RMSE |
 | --- | --- | --- |
-| RandomForest | 0.7847 | 0.5311 |
-| GradientBoosting | 0.7160 | 0.6100 |
-| Ridge | 0.4908 | 0.8169 |
+| RandomForest | 0.7777 | 0.5397 |
+| GradientBoosting | 0.7313 | 0.5934 |
+| Ridge | 0.5452 | 0.7720 |
 
 ### Summary
 | Scenario | Avg R2 | % of Baseline |
 | --- | --- | --- |
 | Baseline | 0.7236 | 100.0% |
-| Replacement | 0.5844 | 80.8% |
-| Augmentation | 0.6639 | 91.7% |
+| Replacement | 0.6352 | 87.8% |
+| Augmentation | 0.6848 | 94.6% |
 
 ## Fidelity
 ### Statistical Fidelity Summary
 | Metric | Value |
 | --- | --- |
-| avg_wasserstein | 6.2512 |
-| avg_jsd | 0.0540 |
-| correlation_frobenius | 5.9300 |
+| avg_wasserstein | 5.8566 |
+| avg_jsd | 0.0419 |
+| correlation_frobenius | 6.5786 |
 
-**Numerical:** 8 columns, avg Wasserstein=6.2512, avg JSD=0.0540, KS pass rate (p>0.05)=0%
+**Numerical:** 8 columns, avg Wasserstein=5.8566, avg JSD=0.0419, KS pass rate (p>0.05)=0%
+
+## Privacy (Membership Inference Attack)
+| Metric | Value |
+| --- | --- |
+| Attack AUC | **0.5032** |
+| Interpretation | SAFE — no membership information leaked |
+| Distance Ratio (train/test) | 0.9916 |
+
+*AUC ~0.50 = safe (random guessing), >0.60 = privacy concern, >0.80 = critical leak*
+

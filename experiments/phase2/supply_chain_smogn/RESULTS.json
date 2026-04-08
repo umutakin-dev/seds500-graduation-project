@@ -1,0 +1,216 @@
+{
+  "dataset": "supply_chain",
+  "dataset_info": {
+    "name": "Supply Chain Pricing",
+    "id": "D8",
+    "task": "regression",
+    "n_train": 4958,
+    "n_test": 1240,
+    "d_numerical": 6,
+    "d_categorical": 18,
+    "d_onehot": 9599,
+    "total_dims": 9605
+  },
+  "method": "smogn",
+  "preprocessing": {
+    "scaler": "minmax",
+    "outlier_clip": true
+  },
+  "utility": {
+    "task_type": "regression",
+    "primary_metric": "r2",
+    "baseline": {
+      "RandomForest": {
+        "r2": 0.49362316913097803,
+        "rmse": 9880.26193864266
+      },
+      "GradientBoosting": {
+        "r2": 0.4100448797926246,
+        "rmse": 10664.513113300824
+      },
+      "Ridge": {
+        "r2": 0.36973196268081665,
+        "rmse": 11022.856979930384
+      }
+    },
+    "replacement": {
+      "RandomForest": {
+        "r2": 0.5128901372090657,
+        "rmse": 9690.47369007804
+      },
+      "GradientBoosting": {
+        "r2": 0.23568673986490496,
+        "rmse": 12138.56204085695
+      },
+      "Ridge": {
+        "r2": -0.02119624614715576,
+        "rmse": 14030.91957071952
+      }
+    },
+    "augmentation": {
+      "RandomForest": {
+        "r2": 0.5045361521234677,
+        "rmse": 9773.216753755505
+      },
+      "GradientBoosting": {
+        "r2": 0.3305821210039632,
+        "rmse": 11360.048850946096
+      },
+      "Ridge": {
+        "r2": 0.006137371063232422,
+        "rmse": 13841.868659975069
+      }
+    },
+    "summary": {
+      "baseline": {
+        "avg_r2": 0.4244666705348064
+      },
+      "replacement": {
+        "avg_r2": 0.2424602103089383,
+        "pct_of_baseline": 57.12114216257563
+      },
+      "augmentation": {
+        "avg_r2": 0.28041854806355443,
+        "pct_of_baseline": 66.06373775124472
+      }
+    }
+  },
+  "fidelity": {
+    "numerical": {
+      "wasserstein": [
+        0.2735307430024668,
+        0.3857488625902248,
+        0.384469750085141,
+        0.3305914047404348,
+        0.42995327809519834,
+        0.3780124666051142
+      ],
+      "ks_test": [
+        {
+          "statistic": 0.3992721932444994,
+          "p_value": 7.53e-321
+        },
+        {
+          "statistic": 0.42327870096951353,
+          "p_value": 6.087e-321
+        },
+        {
+          "statistic": 0.4286420600066713,
+          "p_value": 5.76e-321
+        },
+        {
+          "statistic": 0.38689189787365663,
+          "p_value": 8.26e-321
+        },
+        {
+          "statistic": 0.4370801548863786,
+          "p_value": 5.247e-321
+        },
+        {
+          "statistic": 0.42575558661481167,
+          "p_value": 5.934e-321
+        }
+      ],
+      "jensen_shannon_divergence": [
+        0.18367787600636398,
+        0.1549494438826386,
+        0.16734543993965764,
+        0.14089484007570394,
+        0.1820553624132134,
+        0.16534583004387554
+      ],
+      "mean_diff": [
+        0.22915226221084595,
+        0.3857421875,
+        0.384468674659729,
+        0.32193413376808167,
+        0.42995208501815796,
+        0.3779720067977905
+      ],
+      "std_diff": [
+        0.015227794647216797,
+        0.16128653287887573,
+        0.17723271250724792,
+        0.06317055225372314,
+        0.29430750012397766,
+        0.16147980093955994
+      ],
+      "correlation_frobenius_norm": 3.2838445260709506,
+      "n_columns": 6,
+      "avg_wasserstein": 0.36371775085309666,
+      "avg_jsd": 0.1657114653935755,
+      "avg_ks_statistic": 0.41682009893258853,
+      "pct_ks_pass_005": 0.0,
+      "column_names": [
+        "Unit of Measure (Per Pack)",
+        "Line Item Quantity",
+        "Line Item Value",
+        "Pack Price",
+        "Unit Price",
+        "Line Item Insurance (USD)"
+      ]
+    },
+    "categorical": {
+      "frequency_l1_diff": [
+        0.3668783812605014,
+        0.5646065940146898,
+        0.3799256977810154,
+        0.0001337740117553292,
+        0.06839941352603163,
+        0.15021124874124633,
+        0.1775753210222815,
+        0.12124460730312565,
+        0.1995893029079752,
+        0.2777557419231765,
+        0.4554622267325937,
+        0.478829827602277,
+        0.23419544339613713,
+        0.32792491166836746,
+        0.2604144971440336,
+        0.5001226261774425,
+        0.0,
+        0.5069194335682065
+      ],
+      "avg_frequency_l1_diff": 0.2816771693767143,
+      "n_columns": 18,
+      "column_names": [
+        "Project Code",
+        "PO / SO #",
+        "Country",
+        "Managed By",
+        "Fulfill Via",
+        "Vendor INCO Term",
+        "Shipment Mode",
+        "Product Group",
+        "Sub Classification",
+        "Vendor",
+        "Item Description",
+        "Molecule/Test Type",
+        "Brand",
+        "Dosage",
+        "Dosage Form",
+        "Manufacturing Site",
+        "First Line Designation",
+        "Weight (Kilograms)"
+      ]
+    },
+    "summary": {
+      "avg_wasserstein": 0.36371775085309666,
+      "avg_jsd": 0.1657114653935755,
+      "correlation_frobenius": 3.2838445260709506,
+      "avg_cat_freq_diff": 0.2816771693767143
+    }
+  },
+  "privacy": {
+    "attack_auc": 0.9102104993819242,
+    "simple_distance_auc": 0.9100873140834624,
+    "interpretation": "CRITICAL \u2014 synthetic data is essentially copies of real data",
+    "mean_dist_train": 0.35014241015348474,
+    "mean_dist_test": 2.0802213969009653,
+    "dist_ratio": 0.16831978109402854
+  },
+  "timing": {
+    "training_seconds": 116.79817247390747
+  },
+  "extra": {}
+}

@@ -41,10 +41,20 @@
 ### Statistical Fidelity Summary
 | Metric | Value |
 | --- | --- |
-| avg_wasserstein | 0.0086 |
-| avg_jsd | 0.0056 |
-| correlation_frobenius | 0.0393 |
-| avg_cat_freq_diff | 0.0037 |
+| avg_wasserstein | 0.0068 |
+| avg_jsd | 0.0057 |
+| correlation_frobenius | 0.0357 |
+| avg_cat_freq_diff | 0.0025 |
 
-**Numerical:** 5 columns, avg Wasserstein=0.0086, avg JSD=0.0056, KS pass rate (p>0.05)=60%
-**Categorical:** 6 columns, avg freq L1 diff=0.0037
+**Numerical:** 5 columns, avg Wasserstein=0.0068, avg JSD=0.0057, KS pass rate (p>0.05)=100%
+**Categorical:** 6 columns, avg freq L1 diff=0.0025
+
+## Privacy (Membership Inference Attack)
+| Metric | Value |
+| --- | --- |
+| Attack AUC | **0.8211** |
+| Interpretation | CRITICAL — synthetic data is essentially copies of real data |
+| Distance Ratio (train/test) | 0.4291 |
+
+*AUC ~0.50 = safe (random guessing), >0.60 = privacy concern, >0.80 = critical leak*
+

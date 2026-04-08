@@ -5,7 +5,7 @@
 **Dimensions:** 5 num + 6 cat = 18 total
 **Samples:** 8000 train / 2000 test
 **Preprocessing:** minmax, clip=True
-**Training time:** 647.5s
+**Training time:** 638.6s
 
 ## Utility
 
@@ -21,12 +21,12 @@
 | --- | --- | --- |
 | RandomForest | 0.9985 | 0.9883 |
 | GradientBoosting | 0.9985 | 0.9883 |
-| LogisticRegression | 0.9985 | 0.9883 |
+| LogisticRegression | 0.9990 | 0.9923 |
 
 ### Augmentation
 | Model | Accuracy | F1 (macro) |
 | --- | --- | --- |
-| RandomForest | 0.9990 | 0.9923 |
+| RandomForest | 0.9985 | 0.9883 |
 | GradientBoosting | 0.9985 | 0.9883 |
 | LogisticRegression | 0.9990 | 0.9923 |
 
@@ -34,17 +34,27 @@
 | Scenario | Avg ACCURACY | % of Baseline |
 | --- | --- | --- |
 | Baseline | 0.9990 | 100.0% |
-| Replacement | 0.9985 | 99.9% |
-| Augmentation | 0.9988 | 100.0% |
+| Replacement | 0.9987 | 100.0% |
+| Augmentation | 0.9987 | 100.0% |
 
 ## Fidelity
 ### Statistical Fidelity Summary
 | Metric | Value |
 | --- | --- |
-| avg_wasserstein | 0.0279 |
-| avg_jsd | 0.0166 |
-| correlation_frobenius | 0.0887 |
-| avg_cat_freq_diff | 0.0027 |
+| avg_wasserstein | 0.0304 |
+| avg_jsd | 0.0173 |
+| correlation_frobenius | 0.0601 |
+| avg_cat_freq_diff | 0.0064 |
 
-**Numerical:** 5 columns, avg Wasserstein=0.0279, avg JSD=0.0166, KS pass rate (p>0.05)=20%
-**Categorical:** 6 columns, avg freq L1 diff=0.0027
+**Numerical:** 5 columns, avg Wasserstein=0.0304, avg JSD=0.0173, KS pass rate (p>0.05)=0%
+**Categorical:** 6 columns, avg freq L1 diff=0.0064
+
+## Privacy (Membership Inference Attack)
+| Metric | Value |
+| --- | --- |
+| Attack AUC | **0.4814** |
+| Interpretation | SAFE — no membership information leaked |
+| Distance Ratio (train/test) | 1.0011 |
+
+*AUC ~0.50 = safe (random guessing), >0.60 = privacy concern, >0.80 = critical leak*
+
